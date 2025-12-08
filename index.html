@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MYKUDO - Expert Cloud, Data & Architecture Azure | Conseil IT Premium</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="MYKUDO - Cabinet de conseil expert en Architecture Cloud Azure, Data Engineering et DevOps. Transformez votre SI avec +13 ans d'expertise sur des projets critiques.">
+    <meta name="keywords" content="MYKUDO, Conseil Cloud, Architecture Azure, Data Engineering, DevOps, Microservices, Databricks, Transformation Digitale, France">
+    <meta name="author" content="MYKUDO">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://mykudo.fr/">
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mykudo.fr/">
+    <meta property="og:title" content="MYKUDO - Expert Cloud, Data & Architecture Azure">
+    <meta property="og:description" content="Cabinet de conseil expert en Architecture Cloud Azure, Data Engineering et DevOps. Transformez votre SI avec notre expertise.">
+    <meta property="og:image" content="https://mykudo.fr/img/og-image.png">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:locale:alternate" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://mykudo.fr/">
+    <meta name="twitter:title" content="MYKUDO - Expert Cloud, Data & Architecture Azure">
+    <meta name="twitter:description" content="Cabinet de conseil expert en Architecture Cloud Azure, Data Engineering et DevOps.">
+    <meta name="twitter:image" content="https://mykudo.fr/img/og-image.png">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "MYKUDO",
+        "url": "https://mykudo.fr",
+        "logo": "https://mykudo.fr/img/logos/logo_mykudo.png",
+        "description": "Cabinet de conseil expert en Architecture Cloud Azure, Data Engineering et DevOps",
+        "email": "contact@mykudo.fr",
+        "telephone": "+33781647814",
+        "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "FR"
+        },
+        "founder": {
+            "@type": "Person",
+            "name": "Djilali SAHRAOUI",
+            "jobTitle": "Fondateur & Solution Architect"
+        },
+        "knowsAbout": ["Azure", "Cloud Architecture", "Data Engineering", "DevOps", "Microservices", "Databricks", "AI"],
+        "areaServed": "France"
+    }
+    </script>
+</head>
+<body>
+    <!-- Cursor glow effect -->
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#home" class="nav-logo">
+                <img src="img/logos/logo_mykudo.png" alt="MYKUDO" class="logo-img">
+                <span class="logo-text">MYKUDO</span>
+            </a>
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="#home" class="nav-link active" data-i18n="nav.home">Accueil</a></li>
+                <li><a href="#services" class="nav-link" data-i18n="nav.services">Services</a></li>
+                <li><a href="#expertise" class="nav-link" data-i18n="nav.expertise">Expertise</a></li>
+                <li><a href="#references" class="nav-link" data-i18n="nav.references">Références</a></li>
+                <li><a href="#about" class="nav-link" data-i18n="nav.about">À propos</a></li>
+                <li><a href="#contact" class="nav-link" data-i18n="nav.contact">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <div class="lang-toggle" id="lang-toggle">
+                    <button class="lang-btn active" data-lang="fr">FR</button>
+                    <button class="lang-btn" data-lang="en">EN</button>
+                </div>
+                <a href="#contact" class="btn btn-primary btn-nav">
+                    <span data-i18n="nav.cta">Démarrer un projet</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+                <div class="nav-toggle" id="nav-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-bg">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+            <div class="grid-pattern"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge animate-fade-in">
+                    <i class="fab fa-microsoft"></i>
+                    <span data-i18n="hero.badge">Expert Microsoft Azure</span>
+                </div>
+                <h1 class="hero-title animate-fade-in-up">
+                    <span class="title-line" data-i18n="hero.title1">Architecturez</span>
+                    <span class="title-line gradient-text" data-i18n="hero.title2">l'excellence</span>
+                    <span class="title-line" data-i18n="hero.title3">Cloud & Data</span>
+                </h1>
+                <p class="hero-description animate-fade-in-up" data-i18n="hero.description">
+                    Cabinet de conseil premium spécialisé en <strong>Architecture Cloud Azure</strong>,
+                    <strong>Data Engineering</strong> et <strong>DevOps</strong>.
+                    Nous transformons vos défis technologiques en avantages compétitifs.
+                </p>
+                <div class="hero-cta animate-fade-in-up">
+                    <a href="#contact" class="btn btn-primary btn-lg">
+                        <span data-i18n="hero.cta1">Discutons de votre projet</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#services" class="btn btn-outline btn-lg">
+                        <span data-i18n="hero.cta2">Découvrir nos services</span>
+                    </a>
+                </div>
+                <div class="hero-stats animate-fade-in-up">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="13">0</span>
+                        <span class="stat-suffix">+</span>
+                        <span class="stat-label" data-i18n="hero.stat1">Années d'expertise</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="50">0</span>
+                        <span class="stat-suffix">+</span>
+                        <span class="stat-label" data-i18n="hero.stat2">Projets délivrés</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="100">0</span>
+                        <span class="stat-suffix">%</span>
+                        <span class="stat-label" data-i18n="hero.stat3">Clients satisfaits</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <div class="mouse">
+                <div class="wheel"></div>
+            </div>
+            <span data-i18n="hero.scroll">Scroll</span>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="section services">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge" data-i18n="services.badge">Ce que nous faisons</span>
+                <h2 class="section-title" data-i18n="services.title">Des services d'excellence pour votre transformation</h2>
+                <p class="section-subtitle" data-i18n="services.subtitle">
+                    Une expertise pointue au service de vos ambitions technologiques
+                </p>
+            </div>
+
+            <div class="services-grid">
+                <div class="service-card" data-aos="fade-up">
+                    <div class="service-icon">
+                        <div class="icon-wrapper">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <div class="icon-glow"></div>
+                    </div>
+                    <h3 data-i18n="services.cloud.title">Architecture Cloud</h3>
+                    <p data-i18n="services.cloud.desc">
+                        Conception et mise en œuvre d'architectures cloud-native scalables,
+                        résilientes et sécurisées sur Microsoft Azure.
+                    </p>
+                    <ul class="service-features">
+                        <li>Microservices & Event-Driven</li>
+                        <li>Kubernetes & Container Apps</li>
+                        <li>Infrastructure as Code</li>
+                        <li>Multi-region & DR</li>
+                    </ul>
+                    <a href="#contact" class="service-link">
+                        <span data-i18n="services.cta">En savoir plus</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="service-card featured" data-aos="fade-up" data-aos-delay="100">
+                    <div class="featured-badge" data-i18n="services.featured">Populaire</div>
+                    <div class="service-icon">
+                        <div class="icon-wrapper">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="icon-glow"></div>
+                    </div>
+                    <h3 data-i18n="services.data.title">Data Engineering & IA</h3>
+                    <p data-i18n="services.data.desc">
+                        Plateformes data modernes avec Databricks, pipelines ETL/ELT performants
+                        et intégration de solutions d'IA générative.
+                    </p>
+                    <ul class="service-features">
+                        <li>Databricks & Unity Catalog</li>
+                        <li>Data Mesh Architecture</li>
+                        <li>Azure OpenAI & LangChain</li>
+                        <li>Real-time Analytics</li>
+                    </ul>
+                    <a href="#contact" class="service-link">
+                        <span data-i18n="services.cta">En savoir plus</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="service-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="service-icon">
+                        <div class="icon-wrapper">
+                            <i class="fas fa-infinity"></i>
+                        </div>
+                        <div class="icon-glow"></div>
+                    </div>
+                    <h3 data-i18n="services.devops.title">DevOps & Platform</h3>
+                    <p data-i18n="services.devops.desc">
+                        Automatisation CI/CD, GitOps, observabilité avancée et
+                        optimisation FinOps pour des déploiements fiables et économiques.
+                    </p>
+                    <ul class="service-features">
+                        <li>Azure DevOps & GitHub Actions</li>
+                        <li>Terraform & Bicep</li>
+                        <li>Observabilité & Monitoring</li>
+                        <li>DevSecOps & FinOps</li>
+                    </ul>
+                    <a href="#contact" class="service-link">
+                        <span data-i18n="services.cta">En savoir plus</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Expertise Section -->
+    <section id="expertise" class="section expertise">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge" data-i18n="expertise.badge">Notre stack</span>
+                <h2 class="section-title" data-i18n="expertise.title">Technologies maîtrisées</h2>
+                <p class="section-subtitle" data-i18n="expertise.subtitle">
+                    Une expertise technique approfondie sur les technologies leaders du marché
+                </p>
+            </div>
+
+            <div class="tech-categories">
+                <div class="tech-category" data-aos="fade-up">
+                    <div class="category-header">
+                        <div class="category-icon azure">
+                            <i class="fab fa-microsoft"></i>
+                        </div>
+                        <h3>Microsoft Azure</h3>
+                    </div>
+                    <div class="tech-tags">
+                        <span class="tech-tag">App Service</span>
+                        <span class="tech-tag">Azure Functions</span>
+                        <span class="tech-tag">AKS</span>
+                        <span class="tech-tag">Container Apps</span>
+                        <span class="tech-tag">Cosmos DB</span>
+                        <span class="tech-tag">SQL Azure</span>
+                        <span class="tech-tag">Service Bus</span>
+                        <span class="tech-tag">Event Hub</span>
+                        <span class="tech-tag">API Management</span>
+                        <span class="tech-tag">Front Door</span>
+                        <span class="tech-tag">Key Vault</span>
+                        <span class="tech-tag">Entra ID</span>
+                    </div>
+                </div>
+
+                <div class="tech-category" data-aos="fade-up" data-aos-delay="100">
+                    <div class="category-header">
+                        <div class="category-icon data">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3>Data & AI</h3>
+                    </div>
+                    <div class="tech-tags">
+                        <span class="tech-tag">Databricks</span>
+                        <span class="tech-tag">Unity Catalog</span>
+                        <span class="tech-tag">Delta Lake</span>
+                        <span class="tech-tag">Apache Spark</span>
+                        <span class="tech-tag">Data Factory</span>
+                        <span class="tech-tag">Synapse</span>
+                        <span class="tech-tag">Microsoft Fabric</span>
+                        <span class="tech-tag">Azure OpenAI</span>
+                        <span class="tech-tag">LangChain</span>
+                        <span class="tech-tag">Power BI</span>
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">PySpark</span>
+                    </div>
+                </div>
+
+                <div class="tech-category" data-aos="fade-up" data-aos-delay="200">
+                    <div class="category-header">
+                        <div class="category-icon devops">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h3>DevOps & IaC</h3>
+                    </div>
+                    <div class="tech-tags">
+                        <span class="tech-tag">Terraform</span>
+                        <span class="tech-tag">Bicep</span>
+                        <span class="tech-tag">Azure DevOps</span>
+                        <span class="tech-tag">GitHub Actions</span>
+                        <span class="tech-tag">Docker</span>
+                        <span class="tech-tag">Kubernetes</span>
+                        <span class="tech-tag">Helm</span>
+                        <span class="tech-tag">GitOps</span>
+                        <span class="tech-tag">SonarQube</span>
+                        <span class="tech-tag">Grafana</span>
+                        <span class="tech-tag">Prometheus</span>
+                    </div>
+                </div>
+
+                <div class="tech-category" data-aos="fade-up" data-aos-delay="300">
+                    <div class="category-header">
+                        <div class="category-icon backend">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h3>Development</h3>
+                    </div>
+                    <div class="tech-tags">
+                        <span class="tech-tag">C# / .NET 8</span>
+                        <span class="tech-tag">ASP.NET Core</span>
+                        <span class="tech-tag">Angular</span>
+                        <span class="tech-tag">React</span>
+                        <span class="tech-tag">TypeScript</span>
+                        <span class="tech-tag">Entity Framework</span>
+                        <span class="tech-tag">MediatR</span>
+                        <span class="tech-tag">gRPC</span>
+                        <span class="tech-tag">SignalR</span>
+                        <span class="tech-tag">GraphQL</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- References Section -->
+    <section id="references" class="section references">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge" data-i18n="references.badge">Ils nous font confiance</span>
+                <h2 class="section-title" data-i18n="references.title">Références clients</h2>
+                <p class="section-subtitle" data-i18n="references.subtitle">
+                    Des projets stratégiques pour des entreprises de premier plan
+                </p>
+            </div>
+
+            <div class="clients-showcase">
+                <div class="client-logo-large" data-aos="zoom-in">
+                    <img src="img/logos/microsoft.svg" alt="Microsoft">
+                </div>
+                <div class="client-logo-large" data-aos="zoom-in" data-aos-delay="50">
+                    <img src="img/logos/upcoop.png" alt="Up Coop">
+                </div>
+                <div class="client-logo-large" data-aos="zoom-in" data-aos-delay="100">
+                    <img src="img/logos/adecco.png" alt="Adecco">
+                </div>
+                <div class="client-logo-large" data-aos="zoom-in" data-aos-delay="150">
+                    <img src="img/logos/deloitte.png" alt="Deloitte">
+                </div>
+                <div class="client-logo-large" data-aos="zoom-in" data-aos-delay="200">
+                    <img src="img/logos/loreal.svg" alt="L'Oréal">
+                </div>
+                <div class="client-logo-large" data-aos="zoom-in" data-aos-delay="250">
+                    <img src="img/logos/vinci.png" alt="Vinci">
+                </div>
+            </div>
+
+            <!-- Testimonial -->
+            <div class="testimonial-section" data-aos="fade-up">
+                <div class="testimonial-card">
+                    <div class="quote-icon">
+                        <i class="fas fa-quote-left"></i>
+                    </div>
+                    <blockquote data-i18n="references.testimonial">
+                        "Une expertise technique rare combinée à une vraie compréhension des enjeux métier.
+                        MYKUDO a su transformer notre vision en une architecture cloud robuste et évolutive."
+                    </blockquote>
+                    <div class="testimonial-author">
+                        <div class="author-info">
+                            <span class="author-name">Direction Technique</span>
+                            <span class="author-company">Grand compte du secteur bancaire</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section about">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-content" data-aos="fade-right">
+                    <span class="section-badge" data-i18n="about.badge">Qui sommes-nous</span>
+                    <h2 class="section-title" data-i18n="about.title">L'expertise au service de votre réussite</h2>
+                    <p class="about-text" data-i18n="about.text1">
+                        <strong>MYKUDO</strong> est un cabinet de conseil fondé par <strong>Djilali SAHRAOUI</strong>,
+                        Solution Architect et Data Architect avec plus de 13 ans d'expérience sur des projets
+                        stratégiques pour des grands comptes.
+                    </p>
+                    <p class="about-text" data-i18n="about.text2">
+                        Notre mission : vous accompagner dans votre transformation digitale avec une approche
+                        pragmatique, orientée résultats et adaptée à vos enjeux métier.
+                    </p>
+                    <div class="about-values">
+                        <div class="value-item">
+                            <div class="value-icon"><i class="fas fa-gem"></i></div>
+                            <div class="value-content">
+                                <h4 data-i18n="about.value1.title">Excellence</h4>
+                                <p data-i18n="about.value1.desc">Standards techniques élevés et bonnes pratiques</p>
+                            </div>
+                        </div>
+                        <div class="value-item">
+                            <div class="value-icon"><i class="fas fa-handshake"></i></div>
+                            <div class="value-content">
+                                <h4 data-i18n="about.value2.title">Engagement</h4>
+                                <p data-i18n="about.value2.desc">Implication totale dans la réussite de vos projets</p>
+                            </div>
+                        </div>
+                        <div class="value-item">
+                            <div class="value-icon"><i class="fas fa-lightbulb"></i></div>
+                            <div class="value-content">
+                                <h4 data-i18n="about.value3.title">Innovation</h4>
+                                <p data-i18n="about.value3.desc">Veille continue et adoption des meilleures technologies</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="https://djilalisahraoui.com" target="_blank" class="btn btn-outline">
+                        <span data-i18n="about.cta">Voir le profil du fondateur</span>
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+                <div class="about-visual" data-aos="fade-left">
+                    <div class="visual-card">
+                        <div class="card-glow"></div>
+                        <div class="profile-image">
+                            <img src="https://media.licdn.com/dms/image/v2/C5603AQEfzy4S6B1Htg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1587326353431?e=1766620800&v=beta&t=aG8Lm0tJhlRoOPkCFpO1WS1_pvgoheZzA_XaXYCo3nQ" alt="Djilali SAHRAOUI">
+                        </div>
+                        <div class="profile-info">
+                            <h3>Djilali SAHRAOUI</h3>
+                            <p>Fondateur & Solution Architect</p>
+                            <div class="profile-badges">
+                                <span class="badge"><i class="fab fa-microsoft"></i> Azure Expert</span>
+                                <span class="badge"><i class="fas fa-database"></i> Data Architect</span>
+                            </div>
+                        </div>
+                        <div class="social-links">
+                            <a href="https://www.linkedin.com/in/djilali-sahraoui-95726ab5/" target="_blank">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="https://github.com/djilalisahraoui" target="_blank">
+                                <i class="fab fa-github"></i>
+                            </a>
+                            <a href="mailto:djilali.sahraoui@mykudo.fr">
+                                <i class="fas fa-envelope"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="section cta-section">
+        <div class="cta-bg">
+            <div class="gradient-orb orb-cta-1"></div>
+            <div class="gradient-orb orb-cta-2"></div>
+        </div>
+        <div class="container">
+            <div class="cta-content" data-aos="zoom-in">
+                <h2 data-i18n="cta.title">Prêt à transformer votre SI ?</h2>
+                <p data-i18n="cta.subtitle">Discutons de vos enjeux et construisons ensemble votre roadmap technologique.</p>
+                <a href="#contact" class="btn btn-white btn-lg">
+                    <span data-i18n="cta.button">Planifier un échange</span>
+                    <i class="fas fa-calendar-check"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="section contact">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge" data-i18n="contact.badge">Contact</span>
+                <h2 class="section-title" data-i18n="contact.title">Démarrons votre projet</h2>
+                <p class="section-subtitle" data-i18n="contact.subtitle">
+                    Une question ? Un projet ? N'hésitez pas à nous contacter.
+                </p>
+            </div>
+
+            <div class="contact-grid">
+                <div class="contact-info" data-aos="fade-right">
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Email</h4>
+                            <a href="mailto:contact@mykudo.fr">contact@mykudo.fr</a>
+                        </div>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4 data-i18n="contact.phone">Téléphone</h4>
+                            <a href="tel:+33781647814">+33 7 81 64 78 14</a>
+                        </div>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fab fa-linkedin-in"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>LinkedIn</h4>
+                            <a href="https://www.linkedin.com/in/djilali-sahraoui-95726ab5/" target="_blank">Djilali SAHRAOUI</a>
+                        </div>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4 data-i18n="contact.location">Localisation</h4>
+                            <span>France - Remote friendly</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form class="contact-form" id="contact-form" action="https://formspree.io/f/xwpgnker" method="POST" data-aos="fade-left">
+                    <input type="hidden" name="_subject" value="[MYKUDO] Nouveau message de contact">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name" data-i18n="contact.form.name">Nom complet</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="company" data-i18n="contact.form.company">Entreprise</label>
+                        <input type="text" id="company" name="company">
+                    </div>
+                    <div class="form-group">
+                        <label for="subject" data-i18n="contact.form.subject">Sujet</label>
+                        <select id="subject" name="subject" required>
+                            <option value="" data-i18n="contact.form.select">Sélectionnez un sujet</option>
+                            <option value="Architecture Cloud" data-i18n="contact.form.opt1">Architecture Cloud</option>
+                            <option value="Data Engineering" data-i18n="contact.form.opt2">Data Engineering & IA</option>
+                            <option value="DevOps" data-i18n="contact.form.opt3">DevOps & Platform</option>
+                            <option value="Audit" data-i18n="contact.form.opt4">Audit & Conseil</option>
+                            <option value="Autre" data-i18n="contact.form.opt5">Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                    </div>
+                    <input type="hidden" name="g-recaptcha-response" id="recaptcha-token">
+                    <button type="submit" class="btn btn-primary btn-full" id="submit-btn">
+                        <span data-i18n="contact.form.send">Envoyer le message</span>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <img src="img/logos/logo_mykudo.png" alt="MYKUDO" class="footer-logo">
+                    <p data-i18n="footer.tagline">Expert Cloud, Data & Architecture Azure</p>
+                    <div class="footer-social">
+                        <a href="https://www.linkedin.com/in/djilali-sahraoui-95726ab5/" target="_blank">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="https://github.com/djilalisahraoui" target="_blank">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="mailto:contact@mykudo.fr">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h4 data-i18n="footer.services">Services</h4>
+                    <ul>
+                        <li><a href="#services" data-i18n="services.cloud.title">Architecture Cloud</a></li>
+                        <li><a href="#services" data-i18n="services.data.title">Data Engineering & IA</a></li>
+                        <li><a href="#services" data-i18n="services.devops.title">DevOps & Platform</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4 data-i18n="footer.company">Entreprise</h4>
+                    <ul>
+                        <li><a href="#about" data-i18n="nav.about">À propos</a></li>
+                        <li><a href="#references" data-i18n="nav.references">Références</a></li>
+                        <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:contact@mykudo.fr">contact@mykudo.fr</a></li>
+                        <li><a href="tel:+33781647814">+33 7 81 64 78 14</a></li>
+                        <li><span>France</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 MYKUDO. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <a href="#home" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Scripts -->
+    <script src="js/i18n.js"></script>
+    <script src="js/main.js"></script>
+    <!-- reCAPTCHA v3 -->
+    <script src="https://www.google.com/recaptcha/api.js?render=6LfPMyQsAAAAAFgrYIzv9woeDlTPxNj35jAeYf5g"></script>
+</body>
+</html>

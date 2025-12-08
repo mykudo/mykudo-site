@@ -1,0 +1,7 @@
+# Robots.txt for mykudo.fr
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://mykudo.fr/sitemap.xml
