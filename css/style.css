@@ -910,14 +910,13 @@ ul {
 .client-logo-large img {
     max-height: 48px;
     width: auto;
-    filter: grayscale(100%) invert(1) brightness(0.8);
-    opacity: 0.6;
+    opacity: 0.8;
     transition: var(--transition-base);
 }
 
 .client-logo-large:hover img {
-    filter: grayscale(0%) invert(1) brightness(1.2);
     opacity: 1;
+    transform: scale(1.05);
 }
 
 /* Testimonial */
