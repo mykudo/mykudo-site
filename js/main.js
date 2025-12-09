@@ -228,6 +228,13 @@ function initFormValidation() {
                 document.getElementById('recaptcha-token').value = token;
             }
 
+            // Update email subject with selected topic
+            const subjectSelect = document.getElementById('subject');
+            const subjectField = form.querySelector('input[name="_subject"]');
+            if (subjectSelect && subjectField && subjectSelect.value) {
+                subjectField.value = `[MYKUDO] ${subjectSelect.value}`;
+            }
+
             // Submit form
             const formData = new FormData(form);
             const response = await fetch(form.action, {
