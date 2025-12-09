@@ -224,7 +224,7 @@ function initFormValidation() {
         try {
             // Get reCAPTCHA token
             if (typeof grecaptcha !== 'undefined') {
-                const token = await grecaptcha.execute('6LfPMyQsAAAAAFgrYIzv9woeDlTPxNj35jAeYf5g', { action: 'submit' });
+                const token = await grecaptcha.execute('6LdERiYsAAAAADm568ptdHl1yDrlAcsDsf6mTtL-', { action: 'submit' });
                 document.getElementById('recaptcha-token').value = token;
             }
 

@@ -69,7 +69,7 @@ git add . && git commit -m "message" && git push
 ```
 
 ## Clé reCAPTCHA v3
-- Site key: `6LfPMyQsAAAAAFgrYIzv9woeDlTPxNj35jAeYf5g`
+- Site key: `6LdERiYsAAAAADm568ptdHl1yDrlAcsDsf6mTtL-`
 
 ## Contact MYKUDO
 - Email: contact@mykudo.fr
