@@ -44,20 +44,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Schema.org JSON-LD -->
+    <!-- Schema.org JSON-LD - Organization -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "MYKUDO",
+        "legalName": "MYKUDO",
         "url": "https://mykudo.fr",
         "logo": "https://mykudo.fr/img/logos/logo_mykudo.png",
-        "description": "Cabinet de conseil expert en Architecture Cloud Azure, Data Engineering et DevOps",
+        "image": "https://mykudo.fr/apple-touch-icon.png",
+        "description": "Cabinet de conseil expert en Architecture Cloud Azure, Data Engineering et DevOps. Transformation digitale et accompagnement technique pour grands comptes.",
         "email": "contact@mykudo.fr",
         "telephone": "+33781647814",
         "address": {
             "@type": "PostalAddress",
-            "addressCountry": "FR"
+            "addressCountry": "FR",
+            "addressRegion": "Île-de-France"
         },
         "founder": {
             "@type": "Person",
@@ -66,8 +69,91 @@
             "url": "https://djilalisahraoui.com",
             "sameAs": ["https://djilalisahraoui.com", "https://www.linkedin.com/in/djilali-sahraoui-95726ab5/"]
         },
-        "knowsAbout": ["Azure", "Cloud Architecture", "Data Engineering", "DevOps", "Microservices", "Databricks", "AI"],
-        "areaServed": "France"
+        "sameAs": [
+            "https://www.linkedin.com/in/djilali-sahraoui-95726ab5/"
+        ],
+        "knowsAbout": [
+            "Microsoft Azure", "Cloud Architecture", "Solution Architecture", "Data Architecture",
+            "Data Engineering", "DevOps", "Microservices", "Databricks", "Azure OpenAI",
+            "Terraform", "Kubernetes", "CI/CD", "FinOps"
+        ],
+        "areaServed": {
+            "@type": "Country",
+            "name": "France"
+        },
+        "serviceType": ["IT Consulting", "Cloud Architecture", "Data Engineering", "DevOps"]
+    }
+    </script>
+
+    <!-- Schema.org JSON-LD - ProfessionalService -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "ProfessionalService",
+        "name": "MYKUDO",
+        "url": "https://mykudo.fr",
+        "image": "https://mykudo.fr/apple-touch-icon.png",
+        "description": "Cabinet de conseil spécialisé en Architecture Cloud Azure, Data Engineering, DevOps et Intelligence Artificielle. Plus de 13 ans d'expertise sur des projets critiques.",
+        "priceRange": "$$$$",
+        "telephone": "+33781647814",
+        "email": "contact@mykudo.fr",
+        "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "FR",
+            "addressRegion": "Île-de-France"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "48.8566",
+            "longitude": "2.3522"
+        },
+        "areaServed": "France",
+        "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Services MYKUDO",
+            "itemListElement": [
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Architecture Cloud Azure",
+                        "description": "Conception et mise en œuvre d'architectures cloud-native scalables, résilientes et sécurisées sur Microsoft Azure"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Data Engineering & IA",
+                        "description": "Plateformes data modernes avec Databricks, pipelines ETL/ELT performants et intégration de solutions d'IA générative"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "DevOps & Platform Engineering",
+                        "description": "Automatisation CI/CD, GitOps, observabilité avancée et optimisation FinOps"
+                    }
+                }
+            ]
+        }
+    }
+    </script>
+
+    <!-- Schema.org JSON-LD - WebSite -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "MYKUDO - Expert Cloud, Data & Architecture Azure",
+        "url": "https://mykudo.fr",
+        "description": "Cabinet de conseil expert en Architecture Cloud Azure, Data Engineering et DevOps. Transformez votre SI avec notre expertise.",
+        "publisher": {
+            "@type": "Organization",
+            "name": "MYKUDO"
+        },
+        "inLanguage": ["fr", "en"]
     }
     </script>
 </head>
@@ -648,7 +734,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 MYKUDO. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
+                <p>&copy; 2025 MYKUDO. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
             </div>
         </div>
     </footer>
