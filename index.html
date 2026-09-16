@@ -14,7 +14,11 @@
     <meta property="og:url" content="https://mykudo.fr/">
     <meta property="og:title" content="MYKUDO — Ingénierie IA, Data & Cloud">
     <meta property="og:description" content="Architectures Azure, data platforms Databricks & Microsoft Fabric, DevOps — conçues pour la production.">
-    <meta property="og:image" content="https://mykudo.fr/favicon-512x512.png">
+    <meta property="og:image" content="https://mykudo.fr/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://mykudo.fr/og-image.png">
     <meta property="og:locale" content="fr_FR">
 
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -146,6 +150,44 @@
         </div>
     </section>
 
+    <!-- ETUDES DE CAS -->
+    <section class="section cases" id="cas">
+        <div class="container">
+            <div class="section-head">
+                <h2 class="section-title" data-i18n="cs.title">Études de cas</h2>
+                <span class="section-tag" data-i18n="cs.tag">Architectures issues de missions réelles, anonymisées</span>
+            </div>
+            <div class="cases-grid">
+                <a class="case" href="img/casestudies/data-to-app-commercant-full.webp" target="_blank" rel="noopener">
+                    <img src="img/casestudies/data-to-app-commercant-thumb.webp" alt="Data-to-App : de la plateforme à l'application" loading="lazy" decoding="async">
+                    <div class="case-body">
+                        <h3 data-i18n="cs.a.t">Data-to-App : de la plateforme à l'application</h3>
+                        <p data-i18n="cs.a.d">Mirroring des bases opérationnelles, datalake hub &amp; spoke, data products gold, synchronisation Cosmos et exposition via APIs.</p>
+                    </div>
+                </a>
+                <a class="case" href="img/casestudies/plateforme-hybride-fabric-databricks-full.webp" target="_blank" rel="noopener">
+                    <img src="img/casestudies/plateforme-hybride-fabric-databricks-thumb.webp" alt="Data Platform hybride Microsoft Fabric / Databricks" loading="lazy" decoding="async">
+                    <div class="case-body">
+                        <h3 data-i18n="cs.b.t">Data Platform hybride Fabric / Databricks</h3>
+                        <p data-i18n="cs.b.d">Mirroring zéro-ETL vers OneLake, Lakehouse médaillon gouverné par Unity Catalog, restitution Power BI en Direct Lake.</p>
+                    </div>
+                </a>
+                <a class="case" href="img/casestudies/data-mesh-multidomaines-full.webp" target="_blank" rel="noopener">
+                    <img src="img/casestudies/data-mesh-multidomaines-thumb.webp" alt="Data Mesh multi-domaines sur Databricks" loading="lazy" decoding="async">
+                    <div class="case-body">
+                        <h3 data-i18n="cs.c.t">Data Mesh multi-domaines sur Databricks</h3>
+                        <p data-i18n="cs.c.d">Domaines data autonomes en architecture médaillon, data products publiés et consommés via Unity Catalog.</p>
+                    </div>
+                </a>
+            </div>
+            <div class="impact-row">
+                <div class="impact"><span class="impact-num">-30 %</span><span class="impact-label" data-i18n="im.a">de coûts Databricks chez un émetteur de titres de services (FinOps)</span></div>
+                <div class="impact"><span class="impact-num">10 M+</span><span class="impact-label" data-i18n="im.b">lignes par semaine en streaming near-realtime vers l'ERP d'un grand compte</span></div>
+                <div class="impact"><span class="impact-num" data-i18n="im.c.n">Millions</span><span class="impact-label" data-i18n="im.c">d'événements traités par jour en temps réel (Spark Streaming)</span></div>
+            </div>
+        </div>
+    </section>
+
     <!-- REFERENCES -->
     <section class="section refs" id="references">
         <div class="container">
@@ -238,7 +280,7 @@
         <div class="container footer-inner">
             <span class="brand"><img src="img/logo-mk-clair.png" alt="" class="brand-logo small"><span class="brand-name">MYKUDO</span></span>
             <span data-i18n="ft.line">Architecture Cloud · Data Engineering &amp; IA · DevOps</span>
-            <span>© 2026 MYKUDO</span>
+            <span>SASU MYKUDO · RCS Versailles 932 969 520 · <a href="mentions-legales.html" data-i18n="ft.legal">Mentions légales</a></span>
         </div>
     </footer>
 

@@ -224,3 +224,27 @@ img { max-width: 100%; }
     .stars, .pulse-dot, .svc::before { animation: none; }
     html { scroll-behavior: auto; }
 }
+
+/* ============ ÉTUDES DE CAS ============ */
+.cases { border-top: 1px solid var(--line); }
+.cases-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+.case {
+    display: flex; flex-direction: column;
+    background: rgba(13,20,53,.75); border: 1px solid var(--line);
+    border-radius: 16px; overflow: hidden;
+    transition: transform .25s, border-color .25s;
+}
+.case:hover { transform: translateY(-4px); border-color: rgba(56,225,255,.5); color: inherit; }
+.case img { width: 100%; height: 190px; object-fit: contain; object-position: top center; background: #f8fafc; padding: 8px; }
+.case-body { padding: 20px 22px; }
+.case-body h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; color: var(--text); }
+.case-body p { font-size: 13.5px; color: var(--text-soft); margin: 0; line-height: 1.55; }
+.impact-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 52px; }
+.impact { border-left: 2px solid rgba(56,225,255,.5); padding-left: 20px; }
+.impact-num { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; color: var(--cyan); }
+.impact-label { font-size: 13.5px; color: var(--text-soft); line-height: 1.5; display: block; margin-top: 4px; }
+.footer a { color: var(--text-dim); text-decoration: underline; }
+.footer a:hover { color: var(--text); }
+@media (max-width: 980px) {
+    .cases-grid, .impact-row { grid-template-columns: 1fr; }
+}

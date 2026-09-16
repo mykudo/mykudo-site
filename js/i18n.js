@@ -64,6 +64,19 @@ const translations = {
         "ct.i.phone": "Phone",
         "ct.i.loc": "Location",
         "ct.i.locv": "France · remote friendly",
+        "cs.title": "Case studies",
+        "cs.tag": "Architectures from real assignments, anonymized",
+        "cs.a.t": "Data-to-App: from platform to application",
+        "cs.a.d": "Mirroring of operational databases, hub & spoke datalake, gold data products, Cosmos sync and API exposure.",
+        "cs.b.t": "Hybrid Fabric / Databricks Data Platform",
+        "cs.b.d": "Zero-ETL mirroring to OneLake, medallion Lakehouse governed by Unity Catalog, Power BI reporting in Direct Lake.",
+        "cs.c.t": "Multi-domain Data Mesh on Databricks",
+        "cs.c.d": "Autonomous data domains with medallion architecture, data products published and consumed through Unity Catalog.",
+        "im.a": "Databricks cost reduction for an employee-benefits issuer (FinOps)",
+        "im.b": "rows per week streamed near-realtime to a large enterprise ERP",
+        "im.c.n": "Millions",
+        "im.c": "of events processed daily in real time (Spark Streaming)",
+        "ft.legal": "Legal notice",
         "ft.line": "Cloud Architecture · Data Engineering & AI · DevOps"
     }
 };
