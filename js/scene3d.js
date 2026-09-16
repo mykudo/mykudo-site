@@ -69,8 +69,8 @@ function observeLoop(el, renderer, frame) {
     camera.position.set(0, 3.4, 28);
     const LOOK_Y = 0.4;
 
-    const Y_BOTTOM = -11.5, Y_TOP = 10.5;
-    const Y_BRONZE = -6, Y_SILVER = 0, Y_GOLD = 6, Y_APEX = 10.2;
+    const Y_BOTTOM = -9.2, Y_TOP = 9.0;
+    const Y_BRONZE = -4.4, Y_SILVER = 0.5, Y_GOLD = 5.3, Y_APEX = 8.5;
 
     const COL_RAW = new THREE.Color('#4a3826');
     const COL_BRONZE_CLEAN = new THREE.Color('#9a6f3c');
@@ -83,36 +83,33 @@ function observeLoop(el, renderer, frame) {
     scene.add(column);
     function columnX() {
         const aspect = W() / Math.max(1, H());
-        return Math.min(9.5, 5.5 * aspect * 0.85);
+        /* Sur mobile (aspect étroit), la colonne est repoussée vers le bord
+           droit pour laisser le texte respirer. */
+        return Math.min(9.5, Math.max(3.4, 5.5 * aspect * 0.85));
     }
     column.position.x = columnX();
-    column.position.y = -0.7;
+    column.position.y = 0.3;
 
-    /* Halos colorés (teinte via la couleur du sprite, texture blanche partagée) */
+    /* Halos colorés (teinte via la couleur du sprite, texture blanche partagée).
+       Pas de disque plein : vu par la tranche il dégénère en ligne horizontale. */
     function makeRing(y, color, radius) {
         const g = new THREE.Group();
         g.position.y = y;
         const torus = new THREE.Mesh(
-            new THREE.TorusGeometry(radius, 0.055, 16, 96),
-            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
+            new THREE.TorusGeometry(radius, 0.045, 16, 96),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 })
         );
         torus.rotation.x = Math.PI / 2;
         g.add(torus);
-        const disc = new THREE.Mesh(
-            new THREE.CircleGeometry(radius, 64),
-            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.06, side: THREE.DoubleSide, depthWrite: false })
-        );
-        disc.rotation.x = Math.PI / 2;
-        g.add(disc);
-        const glow = makeGlowSprite(color, 1, 0.5);
-        glow.scale.set(radius * 4.4, radius * 1.6, 1);
+        const glow = makeGlowSprite(color, 1, 0.4);
+        glow.scale.set(radius * 3.4, radius * 1.25, 1);
         g.add(glow);
         column.add(g);
-        return { group: g, torus, disc, glow, baseR: radius, phase: Math.random() * Math.PI * 2 };
+        return { group: g, torus, glow, baseR: radius, phase: Math.random() * Math.PI * 2 };
     }
-    const ringBronze = makeRing(Y_BRONZE, 0xb48240, 2.6);
-    const ringSilver = makeRing(Y_SILVER, 0xbec6d7, 1.9);
-    const ringGold = makeRing(Y_GOLD, 0xffd666, 1.3);
+    const ringBronze = makeRing(Y_BRONZE, 0xb48240, 1.85);
+    const ringSilver = makeRing(Y_SILVER, 0xbec6d7, 1.4);
+    const ringGold = makeRing(Y_GOLD, 0xffd666, 1.0);
 
     /* Apex */
     const apex = new THREE.Group();
@@ -121,25 +118,20 @@ function observeLoop(el, renderer, frame) {
         new THREE.SphereGeometry(0.22, 24, 24),
         new THREE.MeshBasicMaterial({ color: 0xffffff })
     ));
-    const apexGlow = makeGlowSprite(0x38e1ff, 5, 0.9);
-    const apexGlow2 = makeGlowSprite(0xffd666, 2.4, 0.5);
+    const apexGlow = makeGlowSprite(0x38e1ff, 3.8, 0.85);
+    const apexGlow2 = makeGlowSprite(0xffd666, 1.9, 0.45);
     apex.add(apexGlow, apexGlow2);
     column.add(apex);
 
     const beam = new THREE.Mesh(
         new THREE.CylinderGeometry(0.035, 0.09, Y_APEX - Y_GOLD, 12, 1, true),
-        new THREE.MeshBasicMaterial({ color: 0x9fefff, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: 0x9fefff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false })
     );
     beam.position.y = (Y_APEX + Y_GOLD) / 2;
     column.add(beam);
 
-    const columnHalo = makeGlowSprite(0x2a3aa8, 1, 0.5);
-    columnHalo.scale.set(17, 34, 1);
-    columnHalo.position.set(0, -0.5, -4);
-    column.add(columnHalo);
-
     /* Particules */
-    const N = 2400;
+    const N = 1800;
     const positions = new Float32Array(N * 3);
     const colors = new Float32Array(N * 3);
     const sizes = new Float32Array(N);
@@ -167,7 +159,7 @@ function observeLoop(el, renderer, frame) {
             void main() {
                 vColor = color;
                 vec4 mv = modelViewMatrix * vec4(position, 1.0);
-                gl_PointSize = size * (140.0 / -mv.z);
+                gl_PointSize = min(size * (140.0 / max(1.0, -mv.z)), 40.0);
                 gl_Position = projectionMatrix * mv;
             }`,
         fragmentShader: `
@@ -192,7 +184,7 @@ function observeLoop(el, renderer, frame) {
     const dustGeo = new THREE.BufferGeometry();
     dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
     scene.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({
-        color: 0x4f6bff, size: 0.06, transparent: true, opacity: 0.4,
+        color: 0x4f6bff, size: 0.05, transparent: true, opacity: 0.3,
         blending: THREE.AdditiveBlending, depthWrite: false
     })));
 
@@ -214,24 +206,24 @@ function observeLoop(el, renderer, frame) {
             if (prevY < Y_SILVER && y >= Y_SILVER) pulseS = 1;
             if (prevY < Y_GOLD && y >= Y_GOLD) pulseG = 1;
 
-            const wob = Math.sin(pSeed[i] * 3.1 + time * (1.5 - s2)) * (1 - s1) * 0.9
-                + Math.sin(pSeed[i] * 7.7 + time * 2.1) * (1 - s2) * 0.35;
-            let radius = 2.05 * (1 - s1) + 1.5 * s1 * (1 - s2) + 1.0 * s2 * (1 - s3);
+            const wob = Math.sin(pSeed[i] * 3.1 + time * (1.5 - s2)) * (1 - s1) * 0.6
+                + Math.sin(pSeed[i] * 7.7 + time * 2.1) * (1 - s2) * 0.25;
+            let radius = 1.45 * (1 - s1) + 1.1 * s1 * (1 - s2) + 0.75 * s2 * (1 - s3);
             const apexT = smoothstepJS(Y_GOLD, Y_APEX, y);
-            radius += s3 * 0.72 * (1 - apexT);
+            radius += s3 * 0.55 * (1 - apexT);
             radius += wob * (1 - s1 * 0.7);
 
             const freeAngle = pAngle[i] + time * (0.25 + pSpin[i] * (1 - s1) * 0.5)
                 + s1 * time * 0.35 + s2 * time * 0.25;
             const helixAngle = pStrand[i] * (Math.PI * 2 / 3) + y * 1.35 + time * 0.9;
             const ang = freeAngle * (1 - s3) + helixAngle * s3;
-            const jitterY = Math.sin(pSeed[i] * 5.3 + time * 3.0) * (1 - s1) * 0.45;
+            const jitterY = Math.sin(pSeed[i] * 5.3 + time * 3.0) * (1 - s1) * 0.3;
 
             positions[i * 3] = Math.cos(ang) * radius;
             positions[i * 3 + 1] = y + jitterY;
             positions[i * 3 + 2] = Math.sin(ang) * radius;
 
-            rawColorVar.copy(COL_RAW).multiplyScalar(0.65 + 0.35 * Math.sin(pSeed[i]));
+            rawColorVar.copy(COL_RAW).multiplyScalar(0.85 + 0.3 * Math.sin(pSeed[i]));
             tmpColor.copy(rawColorVar).lerp(COL_BRONZE_CLEAN, s1);
             tmpColor.lerp(COL_SILVER, s2);
             tmpColor.lerp((i % 4 === 0) ? COL_CYAN : COL_GOLD, s3);
@@ -240,7 +232,7 @@ function observeLoop(el, renderer, frame) {
             colors[i * 3 + 1] = tmpColor.g;
             colors[i * 3 + 2] = tmpColor.b;
 
-            sizes[i] = 3.6 * (1 - s1) + 2.2 * s1 * (1 - s2) + 1.9 * s2 * (1 - s3) + 1.5 * s3;
+            sizes[i] = 2.9 * (1 - s1) + 1.9 * s1 * (1 - s2) + 1.6 * s2 * (1 - s3) + 1.35 * s3;
         }
         geo.attributes.position.needsUpdate = true;
         geo.attributes.color.needsUpdate = true;
@@ -256,28 +248,31 @@ function observeLoop(el, renderer, frame) {
         [[ringBronze, ringPulse.b], [ringSilver, ringPulse.s], [ringGold, ringPulse.g]].forEach(([r, p]) => {
             const breathe = 1 + 0.03 * Math.sin(time * 1.6 + r.phase) + p * 0.09;
             r.group.scale.set(breathe, 1, breathe);
-            r.glow.material.opacity = 0.4 + 0.2 * Math.sin(time * 1.6 + r.phase) * 0.5 + p * 0.5;
-            r.disc.material.opacity = 0.05 + p * 0.1;
+            r.glow.material.opacity = 0.32 + 0.16 * Math.sin(time * 1.6 + r.phase) * 0.5 + p * 0.45;
         });
         const ap = 1 + 0.12 * Math.sin(time * 2.4);
-        apexGlow.scale.set(5 * ap, 5 * ap, 1);
-        apexGlow2.scale.set(2.4 / ap, 2.4 / ap, 1);
+        apexGlow.scale.set(3.8 * ap, 3.8 * ap, 1);
+        apexGlow2.scale.set(1.9 / ap, 1.9 / ap, 1);
     }
 
     /* Labels Bronze / Silver / Gold projetés en HTML */
     const labels = [
-        { el: document.getElementById('label-bronze'), y: Y_BRONZE, r: 2.6 },
-        { el: document.getElementById('label-silver'), y: Y_SILVER, r: 1.9 },
-        { el: document.getElementById('label-gold'), y: Y_GOLD, r: 1.3 },
+        { el: document.getElementById('label-bronze'), y: Y_BRONZE, r: 1.85 },
+        { el: document.getElementById('label-silver'), y: Y_SILVER, r: 1.4 },
+        { el: document.getElementById('label-gold'), y: Y_GOLD, r: 1.0 },
     ].filter(l => l.el);
     const v = new THREE.Vector3();
     function updateLabels() {
         for (const l of labels) {
-            v.set(column.position.x - l.r - 1.1, l.y, 0);
+            v.set(column.position.x - l.r - 1.1, l.y + column.position.y, 0);
             v.project(camera);
-            l.el.style.left = ((v.x * 0.5 + 0.5) * W()) + 'px';
-            l.el.style.top = ((-v.y * 0.5 + 0.5) * H()) + 'px';
-            l.el.classList.add('visible');
+            const px = (v.x * 0.5 + 0.5) * W();
+            const py = (-v.y * 0.5 + 0.5) * H();
+            /* Masqué si le label sort de la zone sûre (fondu bas, nav en haut) */
+            const safe = py > H() * 0.1 && py < H() * 0.72 && px > W() * 0.5;
+            l.el.style.left = px + 'px';
+            l.el.style.top = py + 'px';
+            l.el.classList.toggle('visible', safe);
         }
     }
 
@@ -352,9 +347,9 @@ function observeLoop(el, renderer, frame) {
     };
 
     const system = new THREE.Group();
-    /* Hub décalé vers le haut-droite : visible à côté du titre,
-       les orbites balaient l'arrière des cartes. */
-    system.position.set(4.2, 2.6, 0);
+    /* Hub posé dans la zone libre sous la rangée d'impacts :
+       le noyau vit dans le vide, les orbites balaient l'arrière des cartes. */
+    system.position.set(3.0, -6.6, 0);
     scene.add(system);
 
     /* Hub central */
@@ -481,14 +476,11 @@ function observeLoop(el, renderer, frame) {
         return { link, head, trail, t: (i * 0.37) % 1, speed: 0.10 + (i % 4) * 0.035 };
     });
 
-    /* Battement de cœur */
+    /* Battement de cœur : halo sprite face caméra (un anneau plat vu en
+       incidence rasante dégénère en ligne horizontale à l'écran). */
     const HEARTBEAT_PERIOD = 4.4;
-    const waveMat = new THREE.MeshBasicMaterial({
-        color: COLORS.cyan, transparent: true, opacity: 0,
-        blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
-    });
-    const wave = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 96), waveMat);
-    wave.rotation.x = Math.PI / 2;
+    const wave = makeGlowSprite(COLORS.cyan, 1, 0);
+    const waveMat = wave.material;
     system.add(wave);
 
     /* Traînées orbitales */
@@ -593,7 +585,7 @@ function observeLoop(el, renderer, frame) {
         const hbT = (time % HEARTBEAT_PERIOD) / HEARTBEAT_PERIOD;
         const waveRadius = 1.5 + hbT * 6.6;
         wave.scale.setScalar(waveRadius);
-        waveMat.opacity = 0.24 * Math.min(1, hbT * 8) * Math.pow(1 - hbT, 1.8);
+        waveMat.opacity = 0.1 * Math.min(1, hbT * 8) * Math.pow(1 - hbT, 1.8);
         const corePulse = Math.exp(-hbT * 7);
 
         domains.forEach((d) => {
@@ -663,11 +655,11 @@ function observeLoop(el, renderer, frame) {
         system.rotation.y = time * 0.05;
     }
 
-    let targetTiltX = 0.12, targetTiltZ = 0, tiltX = 0.12, tiltZ = 0;
+    let targetTiltX = 0.22, targetTiltZ = 0, tiltX = 0.22, tiltZ = 0;
     window.addEventListener('mousemove', (e) => {
         const nx = (e.clientX / window.innerWidth) * 2 - 1;
         const ny = (e.clientY / window.innerHeight) * 2 - 1;
-        targetTiltX = 0.12 + ny * 0.14;
+        targetTiltX = 0.22 + ny * 0.14;
         targetTiltZ = -nx * 0.10;
     });
     function applyTilt() {

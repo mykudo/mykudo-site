@@ -95,6 +95,10 @@ img { max-width: 100%; }
 #hero3d {
     position: absolute; inset: 0; z-index: 0;
     width: 100%; height: 100%; display: block;
+    /* La scène s'éteint avant la rangée de stats et sous la nav :
+       aucune collision 3D/texte quelle que soit la largeur d'écran. */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 66%, transparent 82%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 66%, transparent 82%);
 }
 .stage-labels { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .stage-label {
@@ -224,7 +228,13 @@ img { max-width: 100%; }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 980px) {
-    #hero3d { opacity: .55; }
+    #hero3d {
+        opacity: .34;
+        /* Hero mobile plus haut que le viewport : on éteint la scène plus tôt
+           pour qu'elle n'atteigne jamais les chips ni les stats empilées. */
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 46%, transparent 64%);
+        mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 46%, transparent 64%);
+    }
     .stage-labels { display: none; }
     .svc-grid { grid-template-columns: 1fr; }
     .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 40px; }
