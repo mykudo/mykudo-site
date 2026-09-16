@@ -1,348 +1,230 @@
 /* ============================================
-   MYKUDO - Premium Enterprise Website
-   Main JavaScript - Animations & Interactions
+   MYKUDO — interactions & scène 3D du hero
    ============================================ */
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize all components
-    initNavigation();
-    initScrollAnimations();
-    initCounterAnimation();
-    initCursorGlow();
-    initBackToTop();
-    initFormValidation();
-    initAOSAnimation();
-});
+(function () {
+    'use strict';
 
-/* ============================================
-   Navigation
-   ============================================ */
-function initNavigation() {
-    const navbar = document.getElementById('navbar');
-    const navToggle = document.getElementById('nav-toggle');
-    const navMenu = document.getElementById('nav-menu');
-    const navLinks = document.querySelectorAll('.nav-link');
-
-    // Scroll effect
-    let lastScroll = 0;
-    window.addEventListener('scroll', () => {
-        const currentScroll = window.pageYOffset;
-
-        if (currentScroll > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-
-        lastScroll = currentScroll;
-    });
-
-    // Mobile menu toggle
-    navToggle?.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
-        navToggle.classList.toggle('active');
-    });
-
-    // Close menu on link click
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            navMenu.classList.remove('active');
-            navToggle?.classList.remove('active');
-        });
-    });
-
-    // Active link on scroll
-    const sections = document.querySelectorAll('section[id]');
-    window.addEventListener('scroll', () => {
-        const scrollY = window.pageYOffset;
-
-        sections.forEach(section => {
-            const sectionHeight = section.offsetHeight;
-            const sectionTop = section.offsetTop - 100;
-            const sectionId = section.getAttribute('id');
-            const navLink = document.querySelector(`.nav-link[href="#${sectionId}"]`);
-
-            if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-                navLinks.forEach(link => link.classList.remove('active'));
-                navLink?.classList.add('active');
-            }
-        });
-    });
-}
-
-/* ============================================
-   Scroll Animations (Custom AOS-like)
-   ============================================ */
-function initScrollAnimations() {
-    const observerOptions = {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('aos-animate');
-                // Optional: unobserve after animation
-                // observer.unobserve(entry.target);
-            }
-        });
-    }, observerOptions);
-
-    // Observe all elements with data-aos attribute
-    document.querySelectorAll('[data-aos]').forEach(el => {
-        observer.observe(el);
-    });
-}
-
-/* ============================================
-   Counter Animation
-   ============================================ */
-function initCounterAnimation() {
-    const counters = document.querySelectorAll('.stat-number[data-count]');
-
-    const observerOptions = {
-        threshold: 0.5
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const counter = entry.target;
-                const target = parseInt(counter.getAttribute('data-count'));
-                animateCounter(counter, target);
-                observer.unobserve(counter);
-            }
-        });
-    }, observerOptions);
-
-    counters.forEach(counter => observer.observe(counter));
-}
-
-function animateCounter(element, target) {
-    const duration = 2000;
-    const step = target / (duration / 16);
-    let current = 0;
-
-    const timer = setInterval(() => {
-        current += step;
-        if (current >= target) {
-            element.textContent = target;
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current);
-        }
-    }, 16);
-}
-
-/* ============================================
-   Cursor Glow Effect
-   ============================================ */
-function initCursorGlow() {
-    const cursorGlow = document.getElementById('cursorGlow');
-    if (!cursorGlow) return;
-
-    // Only enable on desktop
-    if (window.innerWidth < 1024) {
-        cursorGlow.style.display = 'none';
-        return;
+    /* ---------- Nav mobile ---------- */
+    const toggle = document.getElementById('nav-toggle');
+    const links = document.getElementById('nav-links');
+    if (toggle && links) {
+        toggle.addEventListener('click', () => links.classList.toggle('open'));
+        links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
     }
 
-    let mouseX = 0, mouseY = 0;
-    let currentX = 0, currentY = 0;
-
-    document.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    });
-
-    function animate() {
-        // Smooth follow
-        currentX += (mouseX - currentX) * 0.1;
-        currentY += (mouseY - currentY) * 0.1;
-
-        cursorGlow.style.left = currentX + 'px';
-        cursorGlow.style.top = currentY + 'px';
-
-        requestAnimationFrame(animate);
-    }
-
-    animate();
-
-    // Hide cursor glow when leaving window
-    document.addEventListener('mouseleave', () => {
-        cursorGlow.style.opacity = '0';
-    });
-
-    document.addEventListener('mouseenter', () => {
-        cursorGlow.style.opacity = '0.3';
-    });
-}
-
-/* ============================================
-   Back to Top Button
-   ============================================ */
-function initBackToTop() {
-    const backToTop = document.getElementById('backToTop');
-    if (!backToTop) return;
-
-    window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 500) {
-            backToTop.classList.add('visible');
-        } else {
-            backToTop.classList.remove('visible');
-        }
-    });
-
-    backToTop.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
-}
-
-/* ============================================
-   Form Validation & reCAPTCHA
-   ============================================ */
-function initFormValidation() {
+    /* ---------- Formulaire (Formspree + reCAPTCHA v3) ---------- */
     const form = document.getElementById('contact-form');
-    if (!form) return;
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const submitBtn = document.getElementById('submit-btn');
-        const originalText = submitBtn.innerHTML;
-
-        // Disable button and show loading
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi...';
-
-        try {
-            // Get reCAPTCHA token
-            if (typeof grecaptcha !== 'undefined') {
-                const token = await grecaptcha.execute('6LdERiYsAAAAADm568ptdHl1yDrlAcsDsf6mTtL-', { action: 'submit' });
-                document.getElementById('recaptcha-token').value = token;
-            }
-
-            // Update email subject with selected topic
-            const subjectSelect = document.getElementById('subject');
-            const subjectField = form.querySelector('input[name="_subject"]');
-            if (subjectSelect && subjectField && subjectSelect.value) {
-                subjectField.value = `[MYKUDO] ${subjectSelect.value}`;
-            }
-
-            // Submit form
-            const formData = new FormData(form);
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                // Success
-                submitBtn.innerHTML = '<i class="fas fa-check"></i> Message envoyé !';
-                submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)';
-                form.reset();
-
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.style.background = '';
-                    submitBtn.disabled = false;
-                }, 3000);
+    const status = document.getElementById('form-status');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const done = () => {
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { Accept: 'application/json' }
+                }).then(r => {
+                    status.hidden = false;
+                    if (r.ok) {
+                        status.textContent = (window.__lang === 'en')
+                            ? 'Message sent — we will get back to you shortly.'
+                            : 'Message envoyé — nous revenons vers vous rapidement.';
+                        form.reset();
+                    } else {
+                        status.textContent = (window.__lang === 'en')
+                            ? 'Something went wrong. Please email us at contact@mykudo.fr.'
+                            : "Une erreur s'est produite. Écrivez-nous à contact@mykudo.fr.";
+                    }
+                });
+            };
+            if (window.grecaptcha) {
+                grecaptcha.ready(() => {
+                    grecaptcha.execute('6LdERiYsAAAAADm568ptdHl1yDrlAcsDsf6mTtL-', { action: 'contact' })
+                        .then(token => {
+                            document.getElementById('recaptcha-token').value = token;
+                            done();
+                        });
+                });
             } else {
-                throw new Error('Form submission failed');
+                done();
             }
-        } catch (error) {
-            console.error('Error:', error);
-            submitBtn.innerHTML = '<i class="fas fa-times"></i> Erreur';
-            submitBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+        });
+    }
 
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.style.background = '';
-                submitBtn.disabled = false;
-            }, 3000);
+    /* ============================================
+       Scène 3D du hero — moteur maison
+       (projection perspective, DPR, souris, pause hors écran)
+       ============================================ */
+    const cv = document.getElementById('hero3d');
+    if (!cv) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ctx = cv.getContext('2d');
+
+    let W = 0, H = 0, DPR = 1;
+    function resize() {
+        DPR = Math.min(window.devicePixelRatio || 1, 2);
+        const rect = cv.getBoundingClientRect();
+        W = rect.width; H = rect.height;
+        cv.width = Math.round(W * DPR);
+        cv.height = Math.round(H * DPR);
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const FOV = 620, CAMZ = 560;
+
+    /* Grille de particules (vague de données) */
+    const grid = [];
+    const NX = 26, NZ = 18, SPX = 34, SPZ = 34;
+    for (let i = 0; i < NX; i++)
+        for (let j = 0; j < NZ; j++)
+            grid.push({ gx: (i - NX / 2) * SPX, gz: (j - NZ / 2) * SPZ });
+
+    /* Plaques du lakehouse */
+    const slabs = [
+        { y: 120, half: 190, color: '184,130,64',  label: 'Bronze', lc: '#e8c8a0' },
+        { y: 30,  half: 150, color: '190,198,215', label: 'Silver', lc: '#dfe5f2' },
+        { y: -60, half: 110, color: '255,214,102', label: 'Gold',   lc: '#ffe599' }
+    ];
+
+    /* Souris : la caméra suit doucement, les particules proches s'illuminent */
+    const mouse = { x: 0.5, y: 0.5, active: false };
+    cv.addEventListener('pointermove', e => {
+        const r = cv.getBoundingClientRect();
+        mouse.x = (e.clientX - r.left) / r.width;
+        mouse.y = (e.clientY - r.top) / r.height;
+        mouse.active = true;
+    });
+    cv.addEventListener('pointerleave', () => { mouse.active = false; });
+
+    const rot = { x: -0.42, y: 0.5 };
+    let targetY = 0.5, targetX = -0.42;
+    let t = 0;
+
+    function project(x, y, z) {
+        const cy = Math.cos(rot.y), sy = Math.sin(rot.y);
+        const cx = Math.cos(rot.x), sx = Math.sin(rot.x);
+        const X = x * cy + z * sy, Z0 = -x * sy + z * cy;
+        const Y2 = y * cx - Z0 * sx, Z2 = y * sx + Z0 * cx;
+        const s = FOV / (CAMZ + Z2);
+        return { x: W / 2 + X * s, y: H / 2 + Y2 * s, s: s, z: Z2 };
+    }
+
+    function drawFrame() {
+        t += 0.012;
+
+        /* caméra : oscillation lente + attraction douce vers la souris */
+        if (mouse.active) {
+            targetY = 0.15 + mouse.x * 0.75;
+            targetX = -0.55 + mouse.y * 0.28;
+        } else {
+            targetY = Math.sin(t * 0.35) * 0.35 + 0.5;
+            targetX = -0.42;
         }
-    });
-}
+        rot.y += (targetY - rot.y) * 0.045;
+        rot.x += (targetX - rot.x) * 0.045;
 
-/* ============================================
-   AOS-like Animation Initialization
-   ============================================ */
-function initAOSAnimation() {
-    // Add delay based on data-aos-delay attribute
-    document.querySelectorAll('[data-aos-delay]').forEach(el => {
-        const delay = el.getAttribute('data-aos-delay');
-        el.style.transitionDelay = `${delay}ms`;
-    });
-}
+        ctx.clearRect(0, 0, W, H);
 
-/* ============================================
-   Smooth Scroll for anchor links
-   ============================================ */
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            const offset = 80; // navbar height
-            const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
-
-            window.scrollTo({
-                top: targetPosition,
-                behavior: 'smooth'
-            });
+        /* vague de particules + connexions de crête */
+        const pts = [];
+        for (const p of grid) {
+            const wave = Math.sin(p.gx * 0.013 + t * 1.8) * 22 + Math.cos(p.gz * 0.016 + t * 1.3) * 18;
+            const pr = project(p.gx, 195 + wave * 0.35, p.gz);
+            if (pr.z < -CAMZ + 40) continue;
+            const a = Math.max(0.06, Math.min(0.9, (pr.s - 0.45) * 1.6));
+            const mix = (wave + 40) / 80;
+            /* halo autour du curseur */
+            let boost = 0;
+            if (mouse.active) {
+                const dx = pr.x - mouse.x * W, dy = pr.y - mouse.y * H;
+                boost = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / 110);
+            }
+            const r = Math.round(79 + mix * (56 - 79));
+            const g = Math.round(107 + mix * (225 - 107));
+            ctx.fillStyle = 'rgba(' + r + ',' + g + ',255,' + Math.min(1, a + boost * 0.6).toFixed(2) + ')';
+            const rad = Math.max(0.6, 1.9 * pr.s) + boost * 2.2;
+            ctx.beginPath(); ctx.arc(pr.x, pr.y, rad, 0, 6.2832); ctx.fill();
+            if (wave > 22) pts.push(pr);
         }
-    });
-});
-
-/* ============================================
-   Parallax Effect for Hero Orbs
-   ============================================ */
-window.addEventListener('scroll', () => {
-    const scrolled = window.pageYOffset;
-    const orbs = document.querySelectorAll('.gradient-orb');
-
-    orbs.forEach((orb, index) => {
-        const speed = 0.2 + (index * 0.1);
-        orb.style.transform = `translateY(${scrolled * speed}px)`;
-    });
-});
-
-/* ============================================
-   Service Cards Hover Effect
-   ============================================ */
-document.querySelectorAll('.service-card').forEach(card => {
-    card.addEventListener('mouseenter', function(e) {
-        const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        this.style.setProperty('--mouse-x', `${x}px`);
-        this.style.setProperty('--mouse-y', `${y}px`);
-    });
-});
-
-/* ============================================
-   Intersection Observer for Section Animations
-   ============================================ */
-const sectionObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('section-visible');
+        /* connexions fines entre points de crête voisins */
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i < pts.length; i++) {
+            for (let j = i + 1; j < pts.length; j++) {
+                const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < 3600) {
+                    ctx.strokeStyle = 'rgba(56,225,255,' + (0.22 * (1 - d2 / 3600)).toFixed(2) + ')';
+                    ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+                }
+            }
         }
-    });
-}, {
-    threshold: 0.1
-});
 
-document.querySelectorAll('.section').forEach(section => {
-    sectionObserver.observe(section);
-});
+        /* plaques lakehouse wireframe */
+        for (const s of slabs) {
+            const lift = Math.sin(t * 1.1 + s.y) * 8;
+            const y = s.y + lift;
+            const c = [[-s.half, y, -s.half], [s.half, y, -s.half], [s.half, y, s.half], [-s.half, y, s.half]]
+                .map(v => project(v[0], v[1], v[2]));
+            ctx.beginPath();
+            ctx.moveTo(c[0].x, c[0].y);
+            for (let k = 1; k < 4; k++) ctx.lineTo(c[k].x, c[k].y);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(' + s.color + ',0.10)';
+            ctx.strokeStyle = 'rgba(' + s.color + ',0.75)';
+            ctx.lineWidth = 1.4;
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = s.lc;
+            ctx.font = '600 13px "Space Grotesk", sans-serif';
+            ctx.fillText(s.label, c[0].x + 10, c[0].y - 6);
+        }
+
+        /* faisceaux verticaux */
+        for (let b = 0; b < 4; b++) {
+            const bx = Math.sin(t * 0.7 + b * 1.7) * 90, bz = Math.cos(t * 0.5 + b * 2.1) * 90;
+            const p1 = project(bx, 130, bz), p2 = project(bx, -70, bz);
+            const ga = 0.25 + 0.25 * Math.sin(t * 3 + b);
+            const gr = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+            gr.addColorStop(0, 'rgba(56,225,255,0)');
+            gr.addColorStop(0.5, 'rgba(56,225,255,' + ga.toFixed(2) + ')');
+            gr.addColorStop(1, 'rgba(56,225,255,0)');
+            ctx.strokeStyle = gr; ctx.lineWidth = 1.6;
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        }
+
+        /* nœud IA */
+        const top = project(0, -125 + Math.sin(t * 1.4) * 6, 0);
+        const glow = ctx.createRadialGradient(top.x, top.y, 0, top.x, top.y, 34);
+        glow.addColorStop(0, 'rgba(56,225,255,0.85)');
+        glow.addColorStop(0.4, 'rgba(56,225,255,0.25)');
+        glow.addColorStop(1, 'rgba(56,225,255,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(top.x, top.y, 34, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = '#05081c';
+        ctx.beginPath(); ctx.arc(top.x, top.y, 13, 0, 6.2832); ctx.fill();
+        ctx.strokeStyle = 'rgba(56,225,255,0.9)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(top.x, top.y, 13, 0, 6.2832); ctx.stroke();
+        ctx.fillStyle = '#38e1ff';
+        ctx.font = '700 11px "Space Grotesk", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('IA', top.x, top.y + 4);
+        ctx.textAlign = 'left';
+    }
+
+    /* boucle : pause hors viewport, une frame statique si reduced-motion */
+    let raf = null, visible = true;
+    function loop() {
+        drawFrame();
+        if (visible && !reduced) raf = requestAnimationFrame(loop);
+    }
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(entries => {
+            visible = entries[0].isIntersecting;
+            if (visible && !reduced && raf === null) raf = requestAnimationFrame(loop);
+            if (!visible && raf !== null) { cancelAnimationFrame(raf); raf = null; }
+        }).observe(cv);
+    }
+    raf = requestAnimationFrame(loop);
+})();
