@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mykudo — Terrain de données</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --text: #eaf0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+  }
+  .hero {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 85% 5%, var(--bg-glow) 0%, rgba(10, 19, 88, 0) 60%),
+      var(--bg);
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .overlay {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 40px clamp(24px, 6vw, 96px);
+    pointer-events: none;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+  .brand em {
+    font-style: normal;
+    color: var(--cyan);
+  }
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 720px;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: clamp(2.1rem, 5.2vw, 4rem);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+  h1 .grad {
+    display: block;
+    background: linear-gradient(90deg, var(--indigo), var(--cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sub {
+    margin-top: 20px;
+    font-size: clamp(1rem, 1.6vw, 1.15rem);
+    line-height: 1.6;
+    color: rgba(234, 240, 255, 0.72);
+    max-width: 520px;
+  }
+  .cta {
+    pointer-events: auto;
+    margin-top: 36px;
+    align-self: flex-start;
+    font: 500 1rem 'Space Grotesk', sans-serif;
+    color: var(--text);
+    background: linear-gradient(90deg, rgba(79, 107, 255, 0.28), rgba(56, 225, 255, 0.18));
+    border: 1px solid rgba(79, 107, 255, 0.65);
+    border-radius: 999px;
+    padding: 14px 32px;
+    cursor: pointer;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .cta:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 28px rgba(56, 225, 255, 0.25);
+    transform: translateY(-1px);
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="brand">MY<em>KUDO</em></div>
+    <div class="content">
+      <h1>
+        Vos plateformes IA, Data &amp; Cloud.
+        <span class="grad">Conçues pour la production.</span>
+      </h1>
+      <p class="sub">Cabinet d'ingénierie : architectures data, plateformes cloud et systèmes IA fiables, du cadrage à l'exploitation.</p>
+      <button class="cta" type="button">Discutons de votre projet</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 600);
+const camBase = new THREE.Vector3(0, 7, 46);
+camera.position.copy(camBase);
+// Point de visée relevé : l'horizon tombe dans le tiers bas du cadre.
+const lookTarget = new THREE.Vector3(0, 26, -220);
+camera.lookAt(lookTarget);
+
+const FOG_COLOR = new THREE.Color('#05081c');
+const VALLEY_COLOR = new THREE.Color('#1a2a78');
+const INDIGO_COLOR = new THREE.Color('#4f6bff');
+const CREST_COLOR = new THREE.Color('#38e1ff');
+
+// Bruit simplex 2D (Ashima / webgl-noise, licence MIT), partagé par les deux shaders.
+const NOISE_GLSL = /* glsl */`
+vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+float snoise(vec2 v){
+  const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                     -0.577350269189626, 0.024390243902439);
+  vec2 i  = floor(v + dot(v, C.yy));
+  vec2 x0 = v - i + dot(i, C.xx);
+  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+  i = mod(i, 289.0);
+  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+  m = m*m; m = m*m;
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 ox = floor(x + 0.5);
+  vec3 a0 = x - ox;
+  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+  vec3 g;
+  g.x  = a0.x  * x0.x  + h.x  * x0.y;
+  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+  return 130.0 * dot(m, g);
+}
+float ridged(vec2 q) { return 1.0 - abs(snoise(q)); }
+float terrainHeight(vec2 p, float t) {
+  // Défilement vers la caméra : le paysage boucle sans couture via l'offset de bruit.
+  vec2 q = vec2(p.x * 0.016, (p.y + t * 10.5) * 0.016);
+  // Ridged noise : crêtes acérées, vallées en V.
+  float r = ridged(q);
+  float h = r * r * 0.68;
+  h += ridged(q * 2.3 + 13.7) * 0.22 * r;
+  h += snoise(q * 4.8 + 71.3) * 0.07;
+  // Masse basse fréquence : alternance de massifs hauts et de vallées profondes.
+  float mass = 0.35 + 0.65 * (snoise(q * 0.32 + 5.0) * 0.5 + 0.5);
+  h *= mass;
+  // Couloir central légèrement creusé pour laisser respirer le titre.
+  float corridor = smoothstep(8.0, 46.0, abs(p.x));
+  return h * mix(7.0, 15.5, corridor);
+}
+`;
+
+const uniforms = {
+  uTime:   { value: 0 },
+  uFog:    { value: FOG_COLOR },
+  uValley: { value: VALLEY_COLOR },
+  uMid:    { value: INDIGO_COLOR },
+  uCrest:  { value: CREST_COLOR },
+};
+
+const terrainMaterial = new THREE.ShaderMaterial({
+  uniforms,
+  wireframe: true,
+  transparent: true,
+  vertexShader: /* glsl */`
+    uniform float uTime;
+    varying float vHeight;
+    varying float vDist;
+    ${NOISE_GLSL}
+    void main() {
+      vec3 pos = position;
+      float h = terrainHeight(pos.xz, uTime);
+      pos.y = h;
+      vHeight = h / 15.5;
+      vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+      vDist = -mv.z;
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform vec3 uFog;
+    uniform vec3 uValley;
+    uniform vec3 uMid;
+    uniform vec3 uCrest;
+    varying float vHeight;
+    varying float vDist;
+    void main() {
+      float t = clamp(vHeight, 0.0, 1.0);
+      vec3 col = mix(uValley, uMid, smoothstep(0.05, 0.5, t));
+      col = mix(col, uCrest, smoothstep(0.45, 0.8, t));
+      // Les lignes s'embrasent au sommet des crêtes : cyan saturé puis cœur blanc.
+      float blaze = smoothstep(0.55, 0.95, t);
+      col = mix(col, uCrest, blaze * 0.85);
+      col = mix(col, vec3(0.88, 0.97, 1.0), smoothstep(0.8, 1.0, t) * 0.6);
+      // Brume distante teintée par l'aube : le lointain vire indigo, pas noir.
+      float fog = smoothstep(60.0, 320.0, vDist);
+      vec3 fogCol = mix(uFog, uMid * 0.55, smoothstep(160.0, 320.0, vDist) * 0.6);
+      col = mix(col, fogCol, fog);
+      // Les lignes proches restent lisibles même en fond de vallée.
+      float near = 1.0 - smoothstep(20.0, 160.0, vDist);
+      float alpha = (1.0 - fog) * (0.42 + 0.58 * smoothstep(0.05, 0.9, t));
+      alpha = min(alpha + near * 0.25, 1.0);
+      gl_FragColor = vec4(col + near * 0.08, alpha);
+    }
+  `,
+});
+
+// Sous-couche opaque : donne de la masse au relief en occultant les lignes arrière.
+const groundMaterial = new THREE.ShaderMaterial({
+  uniforms,
+  vertexShader: terrainMaterial.vertexShader,
+  fragmentShader: /* glsl */`
+    uniform vec3 uFog;
+    uniform vec3 uValley;
+    varying float vHeight;
+    varying float vDist;
+    void main() {
+      float t = clamp(vHeight, 0.0, 1.0);
+      vec3 col = mix(uFog * 0.85, uValley * 0.6, smoothstep(0.1, 0.8, t));
+      float fog = smoothstep(60.0, 320.0, vDist);
+      vec3 fogCol = mix(uFog, vec3(0.12, 0.2, 0.55), smoothstep(160.0, 320.0, vDist) * 0.5);
+      col = mix(col, fogCol, fog);
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+  polygonOffset: true,
+  polygonOffsetFactor: 2,
+  polygonOffsetUnits: 2,
+});
+
+const terrainGeo = new THREE.PlaneGeometry(560, 380, 280, 150);
+terrainGeo.rotateX(-Math.PI / 2);
+const ground = new THREE.Mesh(terrainGeo, groundMaterial);
+ground.position.z = -140;
+scene.add(ground);
+const terrain = new THREE.Mesh(terrainGeo, terrainMaterial);
+terrain.position.z = -140;
+scene.add(terrain);
+
+// Lueur d'horizon : bande lumineuse type aube derrière la ligne de crête lointaine.
+const glowMaterial = new THREE.ShaderMaterial({
+  uniforms,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform vec3 uMid;
+    uniform vec3 uCrest;
+    varying vec2 vUv;
+    void main() {
+      // Bande horizontale : cœur cyan serré sur l'horizon, halo indigo large.
+      float d = abs(vUv.y - 0.3);
+      float core = exp(-d * 16.0);
+      // Halo asymétrique : il s'étire moins vers le haut du ciel.
+      float halo = exp(-d * (vUv.y > 0.3 ? 6.5 : 4.0));
+      // Atténuation latérale douce, la lueur est plus forte au centre-droit.
+      float lat = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
+      lat *= 0.7 + 0.3 * smoothstep(0.3, 0.85, vUv.x);
+      vec3 col = uMid * halo * 1.1 + uCrest * core * 1.15;
+      gl_FragColor = vec4(col * lat, (core + halo * 0.6) * lat);
+    }
+  `,
+});
+const glow = new THREE.Mesh(new THREE.PlaneGeometry(1500, 420), glowMaterial);
+glow.position.set(0, 95, -470);
+scene.add(glow);
+
+// Chaîne lointaine en silhouette, à contre-jour devant la lueur d'aube.
+const FAR_NOISE = NOISE_GLSL;
+const farMaterial = new THREE.ShaderMaterial({
+  uniforms,
+  vertexShader: /* glsl */`
+    uniform float uTime;
+    varying float vH;
+    ${FAR_NOISE}
+    void main() {
+      vec3 pos = position;
+      // Défilement très lent : parallaxe de fond.
+      vec2 q = vec2(pos.x * 0.006, uTime * 0.012 + 3.7);
+      float r = 1.0 - abs(snoise(q));
+      float r2 = 1.0 - abs(snoise(q * 2.7 + 8.2));
+      // Pics affûtés : profil en lame plutôt qu'en dôme.
+      float h = (r * r * r * 0.7 + r2 * r2 * 0.3) * 72.0;
+      // La chaîne s'abaisse côté gauche pour dégager le titre.
+      h *= 0.45 + 0.55 * smoothstep(-620.0, 0.0, pos.x);
+      pos.y = mix(-8.0, h, uv.y);
+      vH = uv.y;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform vec3 uFog;
+    uniform vec3 uMid;
+    varying float vH;
+    void main() {
+      // Silhouette sombre, arête sommitale à peine teintée d'indigo.
+      vec3 col = mix(uFog * 0.55, uMid * 0.38, smoothstep(0.75, 1.0, vH));
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+});
+const farGeo = new THREE.PlaneGeometry(1300, 1, 300, 1);
+const farRange = new THREE.Mesh(farGeo, farMaterial);
+farRange.position.set(0, 0, -430);
+scene.add(farRange);
+
+// Étoiles : champ fixe qui scintille doucement, éteint près de l'horizon.
+const STAR_COUNT = 380;
+const sPositions = new Float32Array(STAR_COUNT * 3);
+const sSeeds = new Float32Array(STAR_COUNT * 2);
+for (let i = 0; i < STAR_COUNT; i++) {
+  sPositions[i * 3]     = (Math.random() - 0.5) * 1400;
+  sPositions[i * 3 + 1] = 60 + Math.pow(Math.random(), 0.7) * 330;
+  sPositions[i * 3 + 2] = -480 - Math.random() * 60;
+  sSeeds[i * 2]     = Math.random() * 6.28;
+  sSeeds[i * 2 + 1] = 0.4 + Math.random() * 1.4;
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(sPositions, 3));
+starGeo.setAttribute('aSeed', new THREE.BufferAttribute(sSeeds, 2));
+const starMaterial = new THREE.ShaderMaterial({
+  uniforms,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexShader: /* glsl */`
+    uniform float uTime;
+    attribute vec2 aSeed;
+    varying float vTwinkle;
+    varying float vLow;
+    void main() {
+      vTwinkle = 0.55 + 0.45 * sin(uTime * aSeed.y + aSeed.x);
+      // Les étoiles s'estompent en approchant de la lueur d'horizon.
+      vLow = smoothstep(60.0, 150.0, position.y);
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = 1.3 + 1.5 * fract(aSeed.x * 7.31);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    varying float vTwinkle;
+    varying float vLow;
+    void main() {
+      vec2 d = gl_PointCoord - 0.5;
+      float disc = smoothstep(0.5, 0.05, length(d));
+      float alpha = disc * vTwinkle * (0.25 + 0.65 * vLow);
+      if (alpha < 0.01) discard;
+      gl_FragColor = vec4(vec3(0.82, 0.9, 1.0), alpha);
+    }
+  `,
+});
+const stars = new THREE.Points(starGeo, starMaterial);
+scene.add(stars);
+
+// Particules : elles s'élèvent du relief, visibles surtout au-dessus des crêtes.
+const PARTICLE_COUNT = 220;
+const pPositions = new Float32Array(PARTICLE_COUNT * 3);
+const pSeeds = new Float32Array(PARTICLE_COUNT * 2);
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  pPositions[i * 3]     = (Math.random() - 0.5) * 420;             // x
+  pPositions[i * 3 + 1] = 0;                                        // y (calculé au shader)
+  pPositions[i * 3 + 2] = -220 + Math.random() * 300;               // z (repère local du terrain)
+  pSeeds[i * 2]     = Math.random();                                // phase
+  pSeeds[i * 2 + 1] = 0.5 + Math.random();                          // vitesse
+}
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+particleGeo.setAttribute('aSeed', new THREE.BufferAttribute(pSeeds, 2));
+
+const particleMaterial = new THREE.ShaderMaterial({
+  uniforms,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexShader: /* glsl */`
+    uniform float uTime;
+    attribute vec2 aSeed;
+    varying float vLife;
+    varying float vCrest;
+    varying float vDist;
+    ${NOISE_GLSL}
+    void main() {
+      float ground = terrainHeight(position.xz, uTime);
+      vCrest = smoothstep(0.5, 0.95, ground / 15.5);
+      float life = fract(uTime * 0.06 * aSeed.y + aSeed.x);
+      vLife = life;
+      vec3 pos = position;
+      // Montée lente avec une légère dérive sinueuse, comme des lucioles.
+      pos.y = ground + 1.5 + life * 38.0;
+      pos.x += sin(life * 9.0 + aSeed.x * 40.0) * 2.5;
+      vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+      vDist = -mv.z;
+      gl_PointSize = (4.5 + vCrest * 4.5) * (170.0 / max(vDist, 1.0));
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform vec3 uCrest;
+    varying float vLife;
+    varying float vCrest;
+    varying float vDist;
+    void main() {
+      vec2 d = gl_PointCoord - 0.5;
+      float disc = smoothstep(0.5, 0.08, length(d));
+      float fade = smoothstep(0.0, 0.1, vLife) * (1.0 - smoothstep(0.5, 1.0, vLife));
+      float fog = 1.0 - smoothstep(80.0, 320.0, vDist);
+      float alpha = disc * fade * fog * (0.55 + 0.45 * vCrest) * 1.6;
+      if (alpha < 0.01) discard;
+      // Cœur clair, halo cyan : petite luciole plutôt que pixel dur.
+      vec3 col = mix(uCrest, vec3(0.95, 1.0, 1.0), smoothstep(0.35, 0.05, length(d)));
+      gl_FragColor = vec4(col, alpha);
+    }
+  `,
+});
+const particles = new THREE.Points(particleGeo, particleMaterial);
+particles.position.z = -140;
+scene.add(particles);
+
+// Parallaxe souris : dérive douce de la caméra, sans OrbitControls.
+const mouse = { x: 0, y: 0 };
+const drift = { x: 0, y: 0 };
+window.addEventListener('mousemove', (e) => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (reducedMotion) renderFrame(1.0);
+});
+
+const clock = new THREE.Clock();
+
+function renderFrame(time) {
+  uniforms.uTime.value = time;
+  drift.x += (mouse.x * 5.0 - drift.x) * 0.04;
+  drift.y += (-mouse.y * 2.2 - drift.y) * 0.04;
+  camera.position.set(camBase.x + drift.x, camBase.y + drift.y, camBase.z);
+  camera.lookAt(lookTarget.x + drift.x * 0.5, lookTarget.y, lookTarget.z);
+  renderer.render(scene, camera);
+}
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+if (reducedMotion) {
+  renderFrame(1.0);
+} else {
+  renderer.setAnimationLoop(() => renderFrame(clock.getElapsedTime()));
+}
+</script>
+</body>
+</html>

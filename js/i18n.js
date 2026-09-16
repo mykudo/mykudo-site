@@ -14,7 +14,7 @@ const translations = {
         "hero.l1": "Your AI, Data",
         "hero.l2": "& Cloud platforms.",
         "hero.l3": "Built for production.",
-        "hero.sub": "MYKUDO designs and industrializes Azure architectures, Databricks & Microsoft Fabric data platforms and DevOps pipelines for large enterprises — from scoping to production.",
+        "hero.sub": "From raw data to business value: MYKUDO designs Azure, Databricks & Microsoft Fabric architectures that refine, harden and deliver — from scoping to production.",
         "hero.cta1": "Let's talk about your project",
         "hero.cta2": "Discover our services",
         "stats.years": "years",

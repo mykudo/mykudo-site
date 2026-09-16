@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MYKUDO — Flux de données</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --text: #eaf0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+  .hero {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 70% at 85% 10%, var(--bg-glow) 0%, transparent 60%),
+      var(--bg);
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .brand {
+    padding: 40px 56px;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.32em;
+    color: var(--text);
+  }
+  .hero-copy {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 720px;
+    padding: 0 56px 60px;
+    position: relative;
+  }
+  .hero-copy::before {
+    content: '';
+    position: absolute;
+    left: -20vw;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 75vw;
+    height: 130%;
+    background: radial-gradient(ellipse 60% 55% at 35% 50%, rgba(3, 5, 18, 0.82) 0%, rgba(3, 5, 18, 0.45) 55%, transparent 78%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: clamp(2.2rem, 4.6vw, 4rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+  h1 .gradient {
+    display: block;
+    background: linear-gradient(92deg, var(--indigo) 0%, var(--cyan) 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .hero-copy p {
+    margin-top: 22px;
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+    line-height: 1.6;
+    color: rgba(234, 240, 255, 0.72);
+    max-width: 520px;
+  }
+  .cta {
+    pointer-events: auto;
+    margin-top: 38px;
+    align-self: flex-start;
+    padding: 15px 34px;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--text);
+    background: linear-gradient(92deg, rgba(79, 107, 255, 0.28), rgba(56, 225, 255, 0.16));
+    border: 1px solid rgba(79, 107, 255, 0.65);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .cta:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 28px rgba(56, 225, 255, 0.28);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 640px) {
+    .brand { padding: 28px 24px; }
+    .hero-copy { padding: 0 24px 40px; }
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="brand">MYKUDO</div>
+    <div class="hero-copy">
+      <h1>
+        Vos plateformes IA, Data &amp; Cloud.
+        <span class="gradient">Conçues pour la production.</span>
+      </h1>
+      <p>Cabinet d'ingénierie spécialisé : architectures data robustes, pipelines industrialisés et IA déployée là où elle crée de la valeur.</p>
+      <button class="cta" type="button">Discutons de votre projet</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+camera.position.set(0, 0, 16);
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------------------------------------------------------------------------
+// Bruit 3D (simplex simplifié / value noise lissé) pour le champ de vecteurs
+// ---------------------------------------------------------------------------
+function hash3(x, y, z) {
+  let n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+function smooth(t) { return t * t * (3 - 2 * t); }
+function noise3(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = x - xi, yf = y - yi, zf = z - zi;
+  const u = smooth(xf), v = smooth(yf), w = smooth(zf);
+  let res = 0;
+  for (let dz = 0; dz <= 1; dz++) {
+    for (let dy = 0; dy <= 1; dy++) {
+      for (let dx = 0; dx <= 1; dx++) {
+        const h = hash3(xi + dx, yi + dy, zi + dz);
+        const wx = dx ? u : 1 - u;
+        const wy = dy ? v : 1 - v;
+        const wz = dz ? w : 1 - w;
+        res += h * wx * wy * wz;
+      }
+    }
+  }
+  return res * 2 - 1;
+}
+// Curl approx : rotationnel du champ de bruit → flux sans divergence, organique
+function curl(x, y, z) {
+  const e = 0.35;
+  const n1 = noise3(x, y + e, z) - noise3(x, y - e, z);
+  const n2 = noise3(x, y, z + e) - noise3(x, y, z - e);
+  const n3 = noise3(x + e, y, z) - noise3(x - e, y, z);
+  return new THREE.Vector3(n1 - n2, n2 - n3, (n3 - n1) * 0.6);
+}
+
+// ---------------------------------------------------------------------------
+// Génération des streamlines : départ en bas-gauche, dérive vers haut-droite,
+// certaines convergent vers le point de « delivery »
+// ---------------------------------------------------------------------------
+const DELIVERY = new THREE.Vector3(9.5, 3.2, -2);
+const LINE_COUNT = 48;
+const SEGMENTS = 140;
+const lines = [];
+
+const vertexShader = `
+  attribute float aProgress;   // position 0..1 le long de la ligne
+  attribute float aFade;       // atténuation en début/fin de ligne
+  uniform float uPixelRatio;
+  varying float vProgress;
+  varying float vFade;
+  varying float vDepth;
+  void main() {
+    vProgress = aProgress;
+    vFade = aFade;
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vDepth = -mv.z;
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+const fragmentShader = `
+  uniform float uTime;
+  uniform float uSpeed;
+  uniform float uPhase;
+  uniform float uBaseAlpha;
+  uniform vec3 uColorA;   // indigo
+  uniform vec3 uColorB;   // cyan
+  uniform float uFogNear;
+  uniform float uFogFar;
+  varying float vProgress;
+  varying float vFade;
+  varying float vDepth;
+  void main() {
+    // Dégradé indigo -> cyan le long de la ligne
+    vec3 col = mix(uColorA, uColorB, smoothstep(0.05, 0.95, vProgress));
+
+    // Pulse « comète » : tête vive + traînée asymétrique derrière
+    float head = fract(uTime * uSpeed + uPhase);
+    float d = vProgress - head;
+    d = d - floor(d + 0.5); // distance cyclique signée (négatif = derrière la tête)
+    float core = exp(-pow(abs(d) * 70.0, 2.0)) * 2.0;            // noyau serré et intense
+    float tail = (d < 0.0) ? exp(d * 30.0) * 1.0 : 0.0;          // traînée exponentielle derrière
+    float pulse = core + tail;
+
+    // Fog : lignes lointaines estompées
+    float fog = 1.0 - smoothstep(uFogNear, uFogFar, vDepth);
+
+    float alpha = (uBaseAlpha + pulse * 0.5) * vFade * fog;
+    vec3 hot = mix(col, vec3(0.85, 0.97, 1.0), clamp(core * 0.28, 0.0, 0.6));
+    gl_FragColor = vec4(hot * (0.7 + pulse), alpha);
+  }
+`;
+
+const indigo = new THREE.Color('#4f6bff');
+const cyan = new THREE.Color('#38e1ff');
+
+function buildGeometry(smoothPts, fadeInEnd, fadeOutEnd = 0.12) {
+  const n = smoothPts.length;
+  const positions = new Float32Array(n * 3);
+  const progress = new Float32Array(n);
+  const fade = new Float32Array(n);
+  smoothPts.forEach((pt, k) => {
+    positions[k * 3] = pt.x;
+    positions[k * 3 + 1] = pt.y;
+    positions[k * 3 + 2] = pt.z;
+    const t = k / (n - 1);
+    progress[k] = t;
+    fade[k] = smooth(Math.min(t / fadeInEnd, 1)) * smooth(Math.min((1 - t) / fadeOutEnd, 1));
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
+  geo.setAttribute('aFade', new THREE.BufferAttribute(fade, 1));
+  return geo;
+}
+
+function addLine(smoothPts, depth, opts = {}) {
+  const nearFactor = 1 - (Math.abs(depth) - 1) / 9; // 1 = proche, 0 = loin
+  const geo = buildGeometry(smoothPts, opts.fadeInEnd || 0.12, opts.fadeOutEnd || 0.12);
+  const mat = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: { value: 0 },
+      uSpeed: { value: opts.speed ?? (0.06 + Math.random() * 0.09) },
+      uPhase: { value: opts.phase ?? Math.random() },
+      uBaseAlpha: { value: (0.15 + nearFactor * 0.25) * (opts.alphaScale ?? 1) },
+      uColorA: { value: indigo },
+      uColorB: { value: cyan },
+      uFogNear: { value: 12 },
+      uFogFar: { value: 30 },
+    },
+  });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+  lines.push({ line, mat, depth });
+
+  // Épaisseur perçue : les lignes proches sont doublées avec un léger offset
+  if (nearFactor > 0.55 && !opts.noThicken) {
+    const off = 0.035 + nearFactor * 0.03;
+    const shifted = smoothPts.map((pt) => new THREE.Vector3(pt.x, pt.y + off, pt.z));
+    const geo2 = buildGeometry(shifted, opts.fadeInEnd || 0.12, opts.fadeOutEnd || 0.12);
+    const mat2 = mat.clone();
+    mat2.uniforms.uBaseAlpha.value *= 0.55;
+    const line2 = new THREE.Line(geo2, mat2);
+    scene.add(line2);
+    lines.push({ line: line2, mat: mat2, depth });
+  }
+  return mat;
+}
+
+const convergingMats = [];
+
+for (let i = 0; i < LINE_COUNT; i++) {
+  const converges = i % 3 === 0; // ~1 ligne sur 3 converge vers le delivery
+  const depth = -1 - Math.random() * 9;              // z : profondeur
+  const start = new THREE.Vector3(
+    -14 - Math.random() * 4,
+    -6 - Math.random() * 4 + depth * 0.15,
+    depth
+  );
+
+  const pts = [];
+  const p = start.clone();
+  // direction de base : diagonale douce bas-gauche -> haut-droite
+  const base = new THREE.Vector3(1, 0.42 + Math.random() * 0.2, 0).normalize();
+  const seed = i * 3.7;
+
+  for (let s = 0; s < SEGMENTS; s++) {
+    pts.push(p.clone());
+    const t = s / (SEGMENTS - 1);
+    const c = curl(p.x * 0.14 + seed, p.y * 0.14, p.z * 0.14 + seed * 0.5);
+    const step = base.clone().multiplyScalar(0.22)
+      .addScaledVector(c, 0.085);
+    if (converges) {
+      // attraction croissante vers le point de delivery
+      const toTarget = DELIVERY.clone().sub(p).normalize();
+      step.lerp(toTarget.multiplyScalar(0.24), smooth(Math.min(1, Math.max(0, t - 0.3) * 2.0)));
+      // la ligne s'arrête au point de delivery, elle ne le traverse pas
+      if (p.distanceTo(DELIVERY) < 0.3) break;
+    }
+    p.add(step);
+  }
+
+  // Lissage Catmull-Rom pour des courbes fluides
+  const curve = new THREE.CatmullRomCurve3(pts.filter((_, k) => k % 4 === 0));
+  const smoothPts = curve.getPoints(SEGMENTS);
+
+  const mat = addLine(smoothPts, depth, converges ? { fadeOutEnd: 0.02, alphaScale: 1.15 } : {});
+  if (converges) convergingMats.push(mat);
+
+  // Embranchements « pipeline » : une ligne sur 6 fork à mi-parcours
+  if (i % 6 === 2) {
+    const forkAt = Math.floor(SEGMENTS * (0.35 + Math.random() * 0.2));
+    const fp = pts[forkAt].clone();
+    const fpts = [];
+    const fseed = seed + 51.3;
+    const fbase = base.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), (Math.random() < 0.5 ? 1 : -1) * (0.25 + Math.random() * 0.25));
+    for (let s = 0; s < SEGMENTS - forkAt; s++) {
+      fpts.push(fp.clone());
+      const c = curl(fp.x * 0.14 + fseed, fp.y * 0.14, fp.z * 0.14 + fseed * 0.5);
+      fp.add(fbase.clone().multiplyScalar(0.20).addScaledVector(c, 0.09));
+    }
+    if (fpts.length > 8) {
+      const fcurve = new THREE.CatmullRomCurve3(fpts.filter((_, k) => k % 4 === 0));
+      addLine(fcurve.getPoints(fpts.length), depth, { alphaScale: 0.8, fadeInEnd: 0.04, noThicken: true });
+    }
+  }
+}
+
+// Lignes « héros » : deux fibres lumineuses guidant l'œil du texte vers le delivery
+for (let h = 0; h < 2; h++) {
+  const depth = -1.6 - h * 0.9;
+  const p = new THREE.Vector3(-15, -4.5 - h * 1.6, depth);
+  const base = new THREE.Vector3(1, 0.34 + h * 0.1, 0).normalize();
+  const seed = 91.7 + h * 17.3;
+  const pts = [];
+  for (let s = 0; s < SEGMENTS; s++) {
+    pts.push(p.clone());
+    const t = s / (SEGMENTS - 1);
+    const c = curl(p.x * 0.11 + seed, p.y * 0.11, p.z * 0.11 + seed * 0.5);
+    const step = base.clone().multiplyScalar(0.23).addScaledVector(c, 0.06);
+    const toTarget = DELIVERY.clone().sub(p).normalize();
+    step.lerp(toTarget.multiplyScalar(0.24), smooth(Math.min(1, Math.max(0, t - 0.3) * 2.0)));
+    if (p.distanceTo(DELIVERY) < 0.3) break;
+    p.add(step);
+  }
+  const curve = new THREE.CatmullRomCurve3(pts.filter((_, k) => k % 4 === 0));
+  const mat = addLine(curve.getPoints(SEGMENTS), depth, {
+    alphaScale: 1.7, fadeOutEnd: 0.02, speed: 0.11 + h * 0.03, phase: h * 0.45,
+  });
+  convergingMats.push(mat);
+}
+
+// ---------------------------------------------------------------------------
+// Point lumineux de « delivery » à droite (sprite additive)
+// ---------------------------------------------------------------------------
+function makeGlowTexture() {
+  const size = 128;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.14, 'rgba(56,225,255,0.95)');
+  g.addColorStop(0.42, 'rgba(79,107,255,0.22)');
+  g.addColorStop(1, 'rgba(79,107,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(c);
+}
+function makeRingTexture() {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const r = size * 0.42;
+  ctx.strokeStyle = 'rgba(120,225,255,1)';
+  ctx.lineWidth = size * 0.018;
+  ctx.shadowColor = 'rgba(56,225,255,0.9)';
+  ctx.shadowBlur = size * 0.03;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, r, 0, Math.PI * 2);
+  ctx.stroke();
+  return new THREE.CanvasTexture(c);
+}
+
+// Halo doux, modéré
+const glowMat = new THREE.SpriteMaterial({
+  map: makeGlowTexture(),
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  transparent: true,
+  opacity: 0.55,
+});
+const glow = new THREE.Sprite(glowMat);
+glow.position.copy(DELIVERY);
+glow.scale.set(3.2, 3.2, 1);
+scene.add(glow);
+
+// Cœur : petit et intense
+const glowCore = new THREE.Sprite(glowMat.clone());
+glowCore.material.opacity = 1;
+glowCore.position.copy(DELIVERY);
+glowCore.scale.set(0.95, 0.95, 1);
+scene.add(glowCore);
+
+// Anneaux concentriques qui pulsent (une « arrivée » toutes les ~1.6 s, décalées)
+const ringTexture = makeRingTexture();
+const RING_COUNT = 3;
+const RING_PERIOD = 1.6;
+const rings = [];
+for (let i = 0; i < RING_COUNT; i++) {
+  const rmat = new THREE.SpriteMaterial({
+    map: ringTexture,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0,
+  });
+  const ring = new THREE.Sprite(rmat);
+  ring.position.copy(DELIVERY);
+  scene.add(ring);
+  rings.push({ ring, rmat, offset: (i / RING_COUNT) * RING_PERIOD });
+}
+
+// ---------------------------------------------------------------------------
+// Poussière d'étoiles : particules discrètes qui scintillent
+// ---------------------------------------------------------------------------
+const DUST_COUNT = 260;
+const dustPos = new Float32Array(DUST_COUNT * 3);
+const dustPhase = new Float32Array(DUST_COUNT);
+for (let i = 0; i < DUST_COUNT; i++) {
+  dustPos[i * 3] = (Math.random() * 2 - 1) * 16;
+  dustPos[i * 3 + 1] = (Math.random() * 2 - 1) * 9;
+  dustPos[i * 3 + 2] = -1 - Math.random() * 10;
+  dustPhase[i] = Math.random() * Math.PI * 2;
+}
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+dustGeo.setAttribute('aPhase', new THREE.BufferAttribute(dustPhase, 1));
+const dustMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  uniforms: { uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() } },
+  vertexShader: `
+    attribute float aPhase;
+    uniform float uTime;
+    uniform float uPixelRatio;
+    varying float vTwinkle;
+    void main() {
+      vTwinkle = 0.4 + 0.6 * (0.5 + 0.5 * sin(uTime * 0.9 + aPhase));
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = (52.0 / -mv.z) * uPixelRatio;
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    varying float vTwinkle;
+    void main() {
+      float d = length(gl_PointCoord - 0.5);
+      float a = smoothstep(0.5, 0.05, d) * 0.42 * vTwinkle;
+      gl_FragColor = vec4(0.65, 0.8, 1.0, a);
+    }
+  `,
+});
+const dust = new THREE.Points(dustGeo, dustMat);
+scene.add(dust);
+
+// ---------------------------------------------------------------------------
+// Souris : parallaxe caméra douce (lerp)
+// ---------------------------------------------------------------------------
+const mouse = { x: 0, y: 0 };
+const target = { x: 0, y: 0 };
+window.addEventListener('mousemove', (e) => {
+  target.x = (e.clientX / window.innerWidth) * 2 - 1;
+  target.y = -((e.clientY / window.innerHeight) * 2 - 1);
+});
+
+// ---------------------------------------------------------------------------
+// Resize
+// ---------------------------------------------------------------------------
+function resize() {
+  const w = canvas.clientWidth || window.innerWidth;
+  const h = canvas.clientHeight || window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', () => {
+  resize();
+  if (reducedMotion) renderFrame(1.2);
+});
+resize();
+
+// ---------------------------------------------------------------------------
+// Boucle d'animation
+// ---------------------------------------------------------------------------
+const clock = new THREE.Clock();
+
+function renderFrame(t) {
+  for (const { mat } of lines) mat.uniforms.uTime.value = t;
+  dustMat.uniforms.uTime.value = t;
+
+  // Flash du cœur quand un pulse convergent « arrive » (head proche de 1)
+  let arrival = 0;
+  for (const m of convergingMats) {
+    const head = (t * m.uniforms.uSpeed.value + m.uniforms.uPhase.value) % 1;
+    const a = Math.max(0, (head - 0.9) / 0.1);
+    arrival = Math.max(arrival, a * a * (3 - 2 * a));
+  }
+
+  // Respiration douce du halo, cœur quasi stable + flash à l'arrivée
+  const breath = 1 + Math.sin(t * 2.1) * 0.08 + arrival * 0.35;
+  glow.scale.set(3.2 * breath, 3.2 * breath, 1);
+  glowMat.opacity = 0.55 + arrival * 0.3;
+  const flick = 1 + Math.sin(t * 6.7) * 0.05 + Math.sin(t * 11.3) * 0.03 + arrival * 0.5;
+  glowCore.scale.set(0.95 * flick, 0.95 * flick, 1);
+
+  // Anneaux : expansion + fondu, cycles décalés
+  for (const { ring, rmat, offset } of rings) {
+    const phase = ((t + offset) % RING_PERIOD) / RING_PERIOD; // 0..1
+    const eased = 1 - Math.pow(1 - phase, 2.2);
+    const s = 0.5 + eased * 3.4;
+    ring.scale.set(s, s, 1);
+    rmat.opacity = Math.pow(1 - phase, 1.8) * 0.6;
+  }
+
+  renderer.render(scene, camera);
+}
+
+if (reducedMotion) {
+  // Une seule frame statique, pas de boucle
+  renderFrame(1.2);
+} else {
+  renderer.setAnimationLoop(() => {
+    const t = clock.getElapsedTime();
+    mouse.x += (target.x - mouse.x) * 0.045;
+    mouse.y += (target.y - mouse.y) * 0.045;
+    camera.position.x = mouse.x * 1.4;
+    camera.position.y = mouse.y * 0.9;
+    camera.lookAt(0.5, 0, -3);
+    renderFrame(t);
+  });
+}
+</script>
+</body>
+</html>

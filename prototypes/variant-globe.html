@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MYKUDO — Globe de données</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --text: #eaf0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    background: radial-gradient(ellipse 90% 80% at 78% 8%, var(--bg-glow) 0%, var(--bg) 62%) var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+  .hero {
+    position: relative;
+    height: 100vh;
+    min-height: 640px;
+    width: 100%;
+    overflow: hidden;
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    display: block;
+  }
+  .overlay {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 40px clamp(24px, 6vw, 96px);
+    pointer-events: none;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.22em;
+    color: var(--text);
+  }
+  .brand .dot { color: var(--cyan); }
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 620px;
+  }
+  .eyebrow {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 22px;
+    opacity: 0.85;
+  }
+  h1 {
+    font-size: clamp(34px, 4.6vw, 60px);
+    line-height: 1.08;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  h1 .gradient {
+    display: block;
+    background: linear-gradient(92deg, var(--indigo) 0%, var(--cyan) 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .lede {
+    margin-top: 22px;
+    font-size: clamp(15px, 1.4vw, 18px);
+    line-height: 1.65;
+    color: rgba(234, 240, 255, 0.72);
+    max-width: 480px;
+  }
+  .cta {
+    pointer-events: auto;
+    margin-top: 36px;
+    align-self: flex-start;
+    display: inline-block;
+    padding: 15px 32px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: #05081c;
+    background: linear-gradient(92deg, var(--cyan) 0%, #7fecff 100%);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 0 32px rgba(56, 225, 255, 0.35);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 48px rgba(56, 225, 255, 0.55);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cta { transition: none; }
+  }
+  @media (max-width: 720px) {
+    .content { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="brand">MYKUDO<span class="dot">.</span></div>
+    <div class="content">
+      <p class="eyebrow">Ingénierie IA · Data · Cloud</p>
+      <h1>
+        Vos plateformes IA, Data &amp; Cloud.
+        <span class="gradient">Conçues pour la production.</span>
+      </h1>
+      <p class="lede">Architecture, industrialisation et fiabilité opérationnelle : nous transformons vos cas d'usage en systèmes qui tiennent la charge, en production, jour après jour.</p>
+      <button class="cta" type="button">Discutons de votre projet</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+camera.position.set(0, 0, 6.6);
+
+const COL_INDIGO = new THREE.Color('#4f6bff');
+const COL_CYAN = new THREE.Color('#38e1ff');
+
+// Pivot : porte la position + l'inclinaison type Terre ; le globe tourne dedans sur Y
+const pivot = new THREE.Group();
+scene.add(pivot);
+const globe = new THREE.Group();
+pivot.add(globe);
+pivot.rotation.z = -0.24; // axe incliné façon Terre
+pivot.rotation.x = 0.26;
+
+// ---- Bruit organique (somme de sinus) pour une densité type continents ----
+function organicNoise(v) {
+  return (
+    Math.sin(v.x * 3.1 + 1.7) * Math.sin(v.y * 4.3 - 0.6) +
+    Math.sin(v.y * 2.2 + v.z * 3.7) * 0.8 +
+    Math.sin(v.z * 5.1 + v.x * 1.9 + 2.4) * 0.6 +
+    Math.sin((v.x + v.y + v.z) * 6.3) * 0.35
+  );
+}
+
+// ---- Points du globe (sphère de Fibonacci filtrée par le bruit) ----
+const RADIUS = 1.9;
+const CANDIDATES = 34000;
+const positions = [];
+const colors = [];
+const sizes = [];
+const keptPoints = []; // pour l'ancrage des arcs
+const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+const tmp = new THREE.Vector3();
+const tmpColor = new THREE.Color();
+
+for (let i = 0; i < CANDIDATES; i++) {
+  const y = 1 - (i / (CANDIDATES - 1)) * 2;
+  const r = Math.sqrt(1 - y * y);
+  const theta = GOLDEN * i;
+  tmp.set(Math.cos(theta) * r, y, Math.sin(theta) * r);
+  const n = organicNoise(tmp);
+  if (n < -0.15) continue; // creux = océans / vides organiques
+  const p = tmp.clone().multiplyScalar(RADIUS);
+  positions.push(p.x, p.y, p.z);
+  keptPoints.push(p);
+  // dégradé indigo → cyan piloté par le bruit + un peu de latitude
+  const t = THREE.MathUtils.clamp(n * 0.28 + (y + 1) * 0.18, 0, 1);
+  tmpColor.copy(COL_INDIGO).lerp(COL_CYAN, t);
+  colors.push(tmpColor.r, tmpColor.g, tmpColor.b);
+  // taille variée : les points les plus « denses » (crêtes du bruit) sont un peu plus gros
+  sizes.push(0.034 + Math.max(0, n) * 0.014 + Math.random() * 0.010);
+}
+
+const pointsGeo = new THREE.BufferGeometry();
+pointsGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+pointsGeo.setAttribute('aColor', new THREE.Float32BufferAttribute(colors, 3));
+pointsGeo.setAttribute('aSize', new THREE.Float32BufferAttribute(sizes, 1));
+
+// Shader points : atténuation par profondeur (face arrière plus sombre + plus petite)
+const pointsMat = new THREE.ShaderMaterial({
+  uniforms: { uScale: { value: 450 } },
+  vertexShader: `
+    attribute vec3 aColor;
+    attribute float aSize;
+    uniform float uScale;
+    varying vec3 vColor;
+    varying float vFacing;
+    void main() {
+      vColor = aColor;
+      vec3 n = normalize(normalMatrix * normalize(position));
+      vFacing = n.z; // 1 = face caméra, -1 = face arrière
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      float sizeFade = mix(0.55, 1.0, smoothstep(-1.0, 0.6, vFacing));
+      gl_PointSize = aSize * uScale * sizeFade / -mv.z;
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vColor;
+    varying float vFacing;
+    void main() {
+      vec2 uv = gl_PointCoord - 0.5;
+      float d = length(uv);
+      float alpha = smoothstep(0.5, 0.24, d);
+      float fade = mix(0.07, 1.0, smoothstep(-0.85, 0.5, vFacing));
+      gl_FragColor = vec4(vColor * 1.15, alpha * fade);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+globe.add(new THREE.Points(pointsGeo, pointsMat));
+
+// ---- Halo atmosphérique (fresnel, face arrière) ----
+const haloMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uIndigo: { value: COL_INDIGO.clone() },
+    uCyan: { value: COL_CYAN.clone() }
+  },
+  vertexShader: `
+    varying vec3 vNormal;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uIndigo;
+    uniform vec3 uCyan;
+    varying vec3 vNormal;
+    void main() {
+      float rim = clamp(1.0 + dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0, 1.0);
+      float intensity = pow(rim, 7.0) * 0.5;
+      // cœur du limbe cyan, extérieur qui retombe vers l'indigo
+      vec3 col = mix(uIndigo, uCyan, pow(rim, 2.0));
+      gl_FragColor = vec4(col, 1.0) * intensity;
+    }
+  `,
+  side: THREE.BackSide,
+  blending: THREE.AdditiveBlending,
+  transparent: true,
+  depthWrite: false
+});
+globe.add(new THREE.Mesh(new THREE.SphereGeometry(RADIUS * 1.09, 64, 64), haloMat));
+
+// Fin liseré interne au limbe (fresnel face avant, très discret)
+const rimMat = new THREE.ShaderMaterial({
+  uniforms: { uColor: { value: COL_CYAN.clone() } },
+  vertexShader: `
+    varying vec3 vNormal;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uColor;
+    varying vec3 vNormal;
+    void main() {
+      float rim = 1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
+      float intensity = pow(rim, 7.0) * 0.35;
+      gl_FragColor = vec4(uColor, 1.0) * intensity;
+    }
+  `,
+  side: THREE.FrontSide,
+  blending: THREE.AdditiveBlending,
+  transparent: true,
+  depthWrite: false
+});
+globe.add(new THREE.Mesh(new THREE.SphereGeometry(RADIUS * 1.002, 64, 64), rimMat));
+
+// ---- Poussière d'étoiles lointaine ----
+const STAR_COUNT = 650;
+const starPos = new Float32Array(STAR_COUNT * 3);
+const starSize = new Float32Array(STAR_COUNT);
+for (let i = 0; i < STAR_COUNT; i++) {
+  // coquille sphérique lointaine autour de la scène
+  const v = new THREE.Vector3().randomDirection().multiplyScalar(14 + Math.random() * 22);
+  starPos[i * 3] = v.x; starPos[i * 3 + 1] = v.y; starPos[i * 3 + 2] = v.z;
+  starSize[i] = 0.05 + Math.random() * 0.10;
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+starGeo.setAttribute('aSize', new THREE.Float32BufferAttribute(starSize, 1));
+const starMat = new THREE.ShaderMaterial({
+  uniforms: { uScale: { value: 450 } },
+  vertexShader: `
+    attribute float aSize;
+    uniform float uScale;
+    void main() {
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = aSize * uScale / -mv.z;
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    void main() {
+      float d = length(gl_PointCoord - 0.5);
+      float alpha = smoothstep(0.5, 0.05, d) * 0.7;
+      gl_FragColor = vec4(0.62, 0.72, 1.0, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+const stars = new THREE.Points(starGeo, starMat);
+scene.add(stars);
+
+// ---- Arcs de transfert de données (traînée comète + tête lumineuse) ----
+const ARC_COUNT = 16;
+const ARC_SEGMENTS = 64;
+const TRAIL_N = 40; // particules de la traînée comète
+const arcs = [];
+const COMET_LEN = 0.38; // longueur de la traînée en fraction de courbe
+
+function makeArc() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array((ARC_SEGMENTS + 1) * 3), 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array((ARC_SEGMENTS + 1) * 3), 3));
+  const mat = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const line = new THREE.Line(geo, mat);
+  globe.add(line);
+
+  // tête lumineuse (sprite additive)
+  const headGeo = new THREE.BufferGeometry();
+  headGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(3), 3));
+  const headMat = new THREE.ShaderMaterial({
+    uniforms: { uScale: { value: 450 }, uOpacity: { value: 0 } },
+    vertexShader: `
+      uniform float uScale;
+      varying float vFacing;
+      void main() {
+        vFacing = normalize(normalMatrix * normalize(position)).z;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = 0.11 * uScale / -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying float vFacing;
+      void main() {
+        float d = length(gl_PointCoord - 0.5) * 2.0;
+        float core = smoothstep(0.45, 0.0, d);
+        float glow = smoothstep(1.0, 0.2, d) * 0.5;
+        vec3 col = mix(vec3(0.22, 0.88, 1.0), vec3(0.85, 0.99, 1.0), core);
+        float fade = mix(0.12, 1.0, smoothstep(-0.5, 0.25, vFacing));
+        gl_FragColor = vec4(col, (core + glow) * uOpacity * fade);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const head = new THREE.Points(headGeo, headMat);
+  globe.add(head);
+
+  // traînée : chapelet de sprites qui suivent la tête, tailles et alphas décroissants
+  const trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(TRAIL_N * 3), 3));
+  const trailK = new Float32Array(TRAIL_N);
+  for (let i = 0; i < TRAIL_N; i++) trailK[i] = i / (TRAIL_N - 1); // 0 queue → 1 tête
+  trailGeo.setAttribute('aK', new THREE.Float32BufferAttribute(trailK, 1));
+  const trailMat = new THREE.ShaderMaterial({
+    uniforms: { uScale: { value: 450 }, uOpacity: { value: 0 } },
+    vertexShader: `
+      attribute float aK;
+      uniform float uScale;
+      varying float vK;
+      varying float vFacing;
+      void main() {
+        vK = aK;
+        vFacing = normalize(normalMatrix * normalize(position)).z;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = (0.02 + 0.05 * aK * aK) * uScale / -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying float vK;
+      varying float vFacing;
+      void main() {
+        float d = length(gl_PointCoord - 0.5) * 2.0;
+        float disc = smoothstep(1.0, 0.15, d);
+        vec3 col = mix(vec3(0.31, 0.42, 1.0), vec3(0.35, 0.92, 1.0), vK * vK);
+        float fade = mix(0.1, 1.0, smoothstep(-0.5, 0.25, vFacing));
+        gl_FragColor = vec4(col, disc * (0.12 + 0.88 * vK * vK) * uOpacity * fade);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const trail = new THREE.Points(trailGeo, trailMat);
+  globe.add(trail);
+
+  const arc = { line, geo, mat, head, headMat, trail, trailGeo, trailMat, t: 0, speed: 0.3, curve: null, end: null };
+  resetArc(arc);
+  arc.t = Math.random() * -2.5; // désynchronise le premier départ
+  return arc;
+}
+
+const resetDir = new THREE.Vector3();
+
+function pickPair() {
+  const a = keptPoints[Math.floor(Math.random() * keptPoints.length)];
+  let b = keptPoints[Math.floor(Math.random() * keptPoints.length)];
+  let guard = 0;
+  while (a.distanceTo(b) < RADIUS * 0.7 && guard++ < 20) {
+    b = keptPoints[Math.floor(Math.random() * keptPoints.length)];
+  }
+  return [a, b];
+}
+
+function resetArc(arc) {
+  // biais vers la face visible : on tire 3 paires, on garde celle dont le milieu fait le plus face caméra
+  let a, b, bestScore = -Infinity;
+  for (let tries = 0; tries < 3; tries++) {
+    const [pa, pb] = pickPair();
+    resetDir.copy(pa).add(pb).normalize().transformDirection(globe.matrixWorld);
+    const score = resetDir.z + Math.random() * 0.4;
+    if (score > bestScore) { bestScore = score; a = pa; b = pb; }
+  }
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const lift = RADIUS * (1.22 + a.distanceTo(b) / (RADIUS * 4.5));
+  mid.setLength(lift);
+  const c1 = a.clone().lerp(mid, 0.6).setLength(lift * 0.96);
+  const c2 = b.clone().lerp(mid, 0.6).setLength(lift * 0.96);
+  arc.curve = new THREE.CubicBezierCurve3(a, c1, c2, b);
+  arc.end = b;
+  arc.t = -Math.random() * 0.8; // délai avant départ
+  arc.speed = 0.24 + Math.random() * 0.3;
+
+  const pos = arc.geo.attributes.position;
+  const pts = arc.curve.getPoints(ARC_SEGMENTS);
+  for (let i = 0; i <= ARC_SEGMENTS; i++) {
+    pos.setXYZ(i, pts[i].x, pts[i].y, pts[i].z);
+  }
+  pos.needsUpdate = true;
+  arc.geo.setDrawRange(0, 0);
+  arc.headMat.uniforms.uOpacity.value = 0;
+  arc.trailMat.uniforms.uOpacity.value = 0;
+}
+
+for (let i = 0; i < ARC_COUNT; i++) arcs.push(makeArc());
+
+// ---- Pulses d'impact à l'arrivée d'un transfert ----
+const PULSE_POOL = 10;
+const pulses = [];
+const pulseGeo = new THREE.RingGeometry(0.86, 1.0, 40);
+for (let i = 0; i < PULSE_POOL; i++) {
+  const mat = new THREE.MeshBasicMaterial({
+    color: COL_CYAN,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(pulseGeo, mat);
+  mesh.visible = false;
+  globe.add(mesh);
+  pulses.push({ mesh, mat, age: 1e9 });
+}
+const PULSE_LIFE = 0.9;
+const upZ = new THREE.Vector3(0, 0, 1);
+const pulseDir = new THREE.Vector3();
+
+function spawnPulse(p) {
+  let oldest = pulses[0];
+  for (const pu of pulses) if (pu.age > oldest.age) oldest = pu;
+  oldest.age = 0;
+  oldest.mesh.visible = true;
+  oldest.mesh.position.copy(p).multiplyScalar(1.005);
+  oldest.mesh.quaternion.setFromUnitVectors(upZ, p.clone().normalize());
+  // atténue les impacts qui ont lieu au dos du globe
+  globe.updateWorldMatrix(true, false);
+  pulseDir.copy(p).transformDirection(globe.matrixWorld);
+  oldest.strength = 0.15 + 0.85 * smoothstepJS(-0.4, 0.35, pulseDir.z);
+}
+
+function updatePulses(dt) {
+  for (const pu of pulses) {
+    if (!pu.mesh.visible) continue;
+    pu.age += dt;
+    const k = pu.age / PULSE_LIFE;
+    if (k >= 1) { pu.mesh.visible = false; pu.mat.opacity = 0; continue; }
+    const s = 0.04 + k * 0.20;
+    pu.mesh.scale.setScalar(s);
+    pu.mat.opacity = 1.0 * (1 - k) * (1 - k) * (pu.strength || 1);
+  }
+}
+
+// ---- Anneau orbital discret + satellite ----
+const ORBIT_R = RADIUS * 1.42;
+const orbitGroup = new THREE.Group();
+orbitGroup.rotation.x = 0.52;
+orbitGroup.rotation.z = 0.08;
+pivot.add(orbitGroup);
+const orbitPts = [];
+for (let i = 0; i <= 200; i++) {
+  const a = (i / 200) * Math.PI * 2;
+  orbitPts.push(new THREE.Vector3(Math.cos(a) * ORBIT_R, 0, Math.sin(a) * ORBIT_R));
+}
+const orbitLine = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints(orbitPts),
+  new THREE.LineBasicMaterial({ color: COL_CYAN, transparent: true, opacity: 0.11, blending: THREE.AdditiveBlending, depthWrite: false })
+);
+orbitGroup.add(orbitLine);
+const satellite = new THREE.Mesh(
+  new THREE.SphereGeometry(0.024, 12, 12),
+  new THREE.MeshBasicMaterial({ color: COL_CYAN, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })
+);
+orbitGroup.add(satellite);
+let satAngle = 1.2;
+function updateSatellite(dt) {
+  satAngle += dt * 0.22;
+  satellite.position.set(Math.cos(satAngle) * ORBIT_R, 0, Math.sin(satAngle) * ORBIT_R);
+}
+updateSatellite(0);
+
+const headPoint = new THREE.Vector3();
+const cIndigoDim = COL_INDIGO.clone().multiplyScalar(0.4);
+const arcTmpColor = new THREE.Color();
+const dirTmp = new THREE.Vector3();
+
+function smoothstepJS(a, b, x) {
+  const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function updateArcs(dt) {
+  globe.updateWorldMatrix(true, false);
+  const m = globe.matrixWorld;
+  for (const arc of arcs) {
+    arc.t += dt * arc.speed;
+    if (arc.t < 0) continue;
+    if (arc.t >= 1) {
+      spawnPulse(arc.end);
+      resetArc(arc);
+      continue;
+    }
+    const t = arc.t;
+    // fenêtre glissante : la tête parcourt [0..1+COMET_LEN] pour que la queue finisse au point d'arrivée
+    const headT = Math.min(1, t * (1 + COMET_LEN));
+    const tailT = Math.max(0, t * (1 + COMET_LEN) - COMET_LEN);
+    const start = Math.floor(tailT * ARC_SEGMENTS);
+    const end = Math.ceil(headT * ARC_SEGMENTS);
+    arc.geo.setDrawRange(start, Math.max(2, end - start + 1));
+    // dégradé comète : sombre/indigo en queue → cyan éclatant en tête,
+    // atténué quand le segment passe derrière le globe (depth cue)
+    const col = arc.geo.attributes.color;
+    const pos = arc.geo.attributes.position;
+    for (let i = start; i <= end; i++) {
+      const k = (i - start) / Math.max(1, end - start); // 0 queue → 1 tête
+      const e = k * k;
+      arcTmpColor.copy(cIndigoDim).lerp(COL_CYAN, e);
+      dirTmp.set(pos.getX(i), pos.getY(i), pos.getZ(i)).transformDirection(m);
+      const facing = smoothstepJS(-0.55, 0.3, dirTmp.z);
+      const lum = (0.3 + 0.7 * e) * (0.1 + 0.9 * facing);
+      col.setXYZ(i, arcTmpColor.r * lum, arcTmpColor.g * lum, arcTmpColor.b * lum);
+    }
+    col.needsUpdate = true;
+    const fade = Math.min(1, Math.sin(Math.PI * Math.min(1, Math.max(0, t))) * 2.2);
+    arc.mat.opacity = fade;
+    // tête lumineuse
+    arc.curve.getPoint(headT, headPoint);
+    arc.head.geometry.attributes.position.setXYZ(0, headPoint.x, headPoint.y, headPoint.z);
+    arc.head.geometry.attributes.position.needsUpdate = true;
+    arc.headMat.uniforms.uOpacity.value = fade;
+    // traînée de particules entre queue et tête
+    const trailPos = arc.trailGeo.attributes.position;
+    for (let i = 0; i < TRAIL_N; i++) {
+      const k = i / (TRAIL_N - 1);
+      arc.curve.getPoint(tailT + (headT - tailT) * k, headPoint);
+      trailPos.setXYZ(i, headPoint.x, headPoint.y, headPoint.z);
+    }
+    trailPos.needsUpdate = true;
+    arc.trailMat.uniforms.uOpacity.value = fade;
+  }
+}
+
+// ---- Placement : globe vers la droite ----
+function layout() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  // échelle des points liée à la hauteur du drawing buffer
+  const uScale = h * 0.5 * renderer.getPixelRatio();
+  pointsMat.uniforms.uScale.value = uScale;
+  starMat.uniforms.uScale.value = uScale;
+  for (const arc of arcs) {
+    arc.headMat.uniforms.uScale.value = uScale;
+    arc.trailMat.uniforms.uScale.value = uScale;
+  }
+  // décale le globe vers la droite (moins sur mobile)
+  const shift = w > 720 ? 1.7 : 0.3;
+  pivot.position.x = shift;
+  pivot.position.y = w > 720 ? 0 : -0.6;
+}
+layout();
+
+// ---- Interaction souris : inclinaison douce (lerp) ----
+const targetTilt = { x: 0, y: 0 };
+const currentTilt = { x: 0, y: 0 };
+window.addEventListener('mousemove', (e) => {
+  const nx = (e.clientX / window.innerWidth) * 2 - 1;
+  const ny = (e.clientY / window.innerHeight) * 2 - 1;
+  targetTilt.y = nx * 0.35;
+  targetTilt.x = ny * 0.25;
+});
+
+window.addEventListener('resize', () => {
+  layout();
+  if (reducedMotion) renderStatic();
+});
+
+// ---- Boucle d'animation ----
+const clock = new THREE.Clock();
+let baseRotation = 0;
+
+function renderFrame(dt) {
+  baseRotation += dt * 0.06;
+  currentTilt.x += (targetTilt.x - currentTilt.x) * 0.045;
+  currentTilt.y += (targetTilt.y - currentTilt.y) * 0.045;
+  globe.rotation.y = baseRotation + currentTilt.y;
+  pivot.rotation.x = 0.26 + currentTilt.x;
+  stars.rotation.y += dt * 0.004;
+  updateSatellite(dt);
+  updateArcs(dt);
+  updatePulses(dt);
+  renderer.render(scene, camera);
+}
+
+function renderStatic() {
+  // Une seule frame : quelques arcs figés à mi-course pour la composition
+  globe.rotation.set(0, 0.9, 0);
+  arcs.forEach((arc, i) => {
+    arc.t = 0.2 + (i / ARC_COUNT) * 0.6;
+  });
+  updateArcs(0);
+  renderer.render(scene, camera);
+}
+
+if (reducedMotion) {
+  renderStatic();
+} else {
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    renderFrame(dt);
+  });
+}
+</script>
+</body>
+</html>

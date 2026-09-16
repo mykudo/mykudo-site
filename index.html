@@ -79,6 +79,12 @@
 
     <!-- HERO -->
     <header class="hero" id="home">
+        <canvas id="hero3d" aria-hidden="true"></canvas>
+        <div class="stage-labels" aria-hidden="true">
+            <div class="stage-label bronze" id="label-bronze">Bronze</div>
+            <div class="stage-label silver" id="label-silver">Silver</div>
+            <div class="stage-label gold" id="label-gold">Gold</div>
+        </div>
         <div class="container hero-grid">
             <div class="hero-copy">
                 <div class="hero-badge">
@@ -90,14 +96,11 @@
                     <span data-i18n="hero.l2">IA, Data &amp; Cloud.</span><br>
                     <span class="grad" data-i18n="hero.l3">Conçues pour la production.</span>
                 </h1>
-                <p class="hero-sub" data-i18n="hero.sub">MYKUDO conçoit et industrialise des architectures Azure, des data platforms Databricks &amp; Microsoft Fabric et des chaînes DevOps pour les grands comptes — du cadrage à la mise en production.</p>
+                <p class="hero-sub" data-i18n="hero.sub">De la donnée brute à la valeur métier : MYKUDO conçoit des architectures Azure, Databricks &amp; Microsoft Fabric qui raffinent, fiabilisent et délivrent — du cadrage à la mise en production.</p>
                 <div class="hero-cta">
                     <a href="#contact" class="btn btn-primary" data-i18n="hero.cta1">Discutons de votre projet</a>
                     <a href="#services" class="btn btn-ghost" data-i18n="hero.cta2">Découvrir nos services</a>
                 </div>
-            </div>
-            <div class="hero-visual">
-                <canvas id="hero3d" aria-hidden="true"></canvas>
                 <div class="hero-chips">
                     <span class="chip">Azure</span><span class="chip">Databricks</span><span class="chip">Microsoft Fabric</span><span class="chip">Azure OpenAI</span>
                 </div>
@@ -152,6 +155,7 @@
 
     <!-- ETUDES DE CAS -->
     <section class="section cases" id="cas">
+        <canvas id="mesh3d" aria-hidden="true"></canvas>
         <div class="container">
             <div class="section-head">
                 <h2 class="section-title" data-i18n="cs.title">Études de cas</h2>
@@ -286,6 +290,7 @@
 
     <script src="js/i18n.js"></script>
     <script src="js/main.js"></script>
+    <script type="module" src="js/scene3d.js"></script>
     <script src="https://www.google.com/recaptcha/api.js?render=6LdERiYsAAAAADm568ptdHl1yDrlAcsDsf6mTtL-"></script>
 </body>
 </html>

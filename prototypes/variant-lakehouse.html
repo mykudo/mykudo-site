@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MYKUDO — Lakehouse médaillon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --text: #eaf0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+  }
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 70% at 85% 10%, var(--bg-glow) 0%, rgba(10, 19, 88, 0) 60%),
+      var(--bg);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse 120% 105% at 55% 45%, rgba(5, 8, 28, 0) 62%, rgba(2, 4, 16, 0.55) 100%);
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .brand {
+    padding: 40px 56px;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.22em;
+  }
+  .content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 56px;
+  }
+  .content-inner {
+    max-width: 620px;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: clamp(34px, 4.6vw, 58px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+  }
+  h1 .gradient {
+    display: block;
+    background: linear-gradient(92deg, var(--indigo) 0%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    margin-top: 22px;
+    font-size: clamp(15px, 1.4vw, 18px);
+    line-height: 1.55;
+    color: rgba(234, 240, 255, 0.68);
+    max-width: 480px;
+  }
+  .cta {
+    pointer-events: auto;
+    display: inline-block;
+    margin-top: 34px;
+    padding: 15px 32px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 16px;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(92deg, var(--indigo) 0%, #3a9bff 100%);
+    box-shadow: 0 8px 30px rgba(79, 107, 255, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(56, 225, 255, 0.35);
+  }
+  @media (max-width: 640px) {
+    .brand { padding: 28px 24px; }
+    .content { padding: 0 24px; }
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="brand">MYKUDO</div>
+    <div class="content">
+      <div class="content-inner">
+        <h1>
+          Vos plateformes IA, Data &amp; Cloud.
+          <span class="gradient">Conçues pour la production.</span>
+        </h1>
+        <p class="subtitle">
+          Architecture lakehouse, gouvernance des données et déploiements IA
+          fiables — du prototype à l'échelle industrielle.
+        </p>
+        <button class="cta" type="button">Discutons de votre projet</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const COLORS = {
+  bg: 0x05081c,
+  indigo: 0x4f6bff,
+  cyan: 0x38e1ff,
+  bronze: 0xb48240,
+  silver: 0xbec6d7,
+  gold: 0xffd666,
+  text: 0xeaf0ff,
+};
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  alpha: true,
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(COLORS.bg, 0.055);
+
+const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(4.6, 2.6, 8.8);
+camera.lookAt(1.5, 1.35, 0);
+
+// Groupe racine : décalé vers la droite pour laisser la place au texte.
+const rig = new THREE.Group();
+rig.position.set(2.3, 0.55, 0);
+rig.scale.setScalar(0.9);
+scene.add(rig);
+
+// ---------- Éclairage ----------
+scene.add(new THREE.AmbientLight(0x223066, 1.6));
+
+const keyLight = new THREE.PointLight(COLORS.indigo, 60, 30);
+keyLight.position.set(-4, 5, 4);
+scene.add(keyLight);
+
+const rimLight = new THREE.PointLight(COLORS.cyan, 28, 25);
+rimLight.position.set(5, 3, -4);
+scene.add(rimLight);
+
+const warmLight = new THREE.PointLight(COLORS.gold, 38, 18);
+warmLight.position.set(0, 4.5, 2);
+rig.add(warmLight);
+
+// ---------- Plaques médaillon ----------
+const LAYERS = [
+  { name: 'BRONZE', color: COLORS.bronze, y: -1.5, size: 4.2, emissive: 0.32 },
+  { name: 'SILVER', color: COLORS.silver, y: 0.0,  size: 3.5, emissive: 0.24 },
+  { name: 'GOLD',   color: COLORS.gold,   y: 1.5,  size: 2.8, emissive: 0.5 },
+];
+
+// Texture radiale réutilisée pour tous les glows/sprites
+function makeGlowTexture() {
+  const s = 128;
+  const cvs = document.createElement('canvas');
+  cvs.width = s;
+  cvs.height = s;
+  const ctx = cvs.getContext('2d');
+  const grad = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.3, 'rgba(255,255,255,0.5)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, s, s);
+  return new THREE.CanvasTexture(cvs);
+}
+const glowTexture = makeGlowTexture();
+
+function roundedPlateGeometry(size, thickness) {
+  const r = size * 0.12;
+  const half = size / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(-half + r, -half);
+  shape.lineTo(half - r, -half);
+  shape.quadraticCurveTo(half, -half, half, -half + r);
+  shape.lineTo(half, half - r);
+  shape.quadraticCurveTo(half, half, half - r, half);
+  shape.lineTo(-half + r, half);
+  shape.quadraticCurveTo(-half, half, -half, half - r);
+  shape.lineTo(-half, -half + r);
+  shape.quadraticCurveTo(-half, -half, -half + r, -half);
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: true,
+    bevelThickness: 0.02,
+    bevelSize: 0.02,
+    bevelSegments: 2,
+  });
+  geo.rotateX(-Math.PI / 2);
+  return geo;
+}
+
+function makeLabelSprite(text, colorHex) {
+  const w = 512, h = 128;
+  const cvs = document.createElement('canvas');
+  cvs.width = w;
+  cvs.height = h;
+  const ctx = cvs.getContext('2d');
+  const color = '#' + colorHex.toString(16).padStart(6, '0');
+  ctx.font = '700 58px "Space Grotesk", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 24;
+  ctx.fillStyle = color;
+  ctx.fillText(text, w / 2, h / 2);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(234, 240, 255, 0.92)';
+  ctx.fillText(text, w / 2, h / 2);
+  const tex = new THREE.CanvasTexture(cvs);
+  tex.anisotropy = 4;
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.0, 0.5, 1);
+  return sprite;
+}
+
+const plates = [];
+LAYERS.forEach((layer, i) => {
+  const group = new THREE.Group();
+  group.position.y = layer.y;
+
+  const geo = roundedPlateGeometry(layer.size, 0.14);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: layer.color,
+    metalness: 0.45,
+    roughness: 0.28,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.12,
+    transparent: true,
+    opacity: 0.55,
+    side: THREE.DoubleSide,
+    emissive: layer.color,
+    emissiveIntensity: layer.emissive,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+
+  // Arêtes lumineuses de la plaque
+  const edges = new THREE.EdgesGeometry(geo, 30);
+  const edgeMat = new THREE.LineBasicMaterial({
+    color: layer.color,
+    transparent: true,
+    opacity: 1.0,
+  });
+  group.add(new THREE.LineSegments(edges, edgeMat));
+
+  // Halo au sol de la plaque (disque additive)
+  const glowGeo = new THREE.CircleGeometry(layer.size * 0.62, 48);
+  glowGeo.rotateX(-Math.PI / 2);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: layer.color,
+    transparent: true,
+    opacity: 0.08,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const glow = new THREE.Mesh(glowGeo, glowMat);
+  glow.position.y = -0.05;
+  group.add(glow);
+
+  // Reflet doux sous la plaque (nappe additive étirée)
+  const reflMat = new THREE.MeshBasicMaterial({
+    map: glowTexture,
+    color: layer.color,
+    transparent: true,
+    opacity: 0.16,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const refl = new THREE.Mesh(new THREE.PlaneGeometry(layer.size * 1.25, layer.size * 0.7), reflMat);
+  refl.rotation.x = -Math.PI / 2;
+  refl.position.y = -0.42;
+  group.add(refl);
+
+  // Label en espace monde (ne tourne pas avec le rig, suit le flottement en y)
+  const label = makeLabelSprite(layer.name, layer.color);
+  label.material.depthTest = false;
+  label.renderOrder = 10;
+  scene.add(label);
+
+  // Ligne de rappel entre la pile et le label
+  const leadGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(1, 0, 0),
+  ]);
+  const lead = new THREE.Line(leadGeo, new THREE.LineBasicMaterial({
+    color: layer.color,
+    transparent: true,
+    opacity: 0.35,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  }));
+  lead.renderOrder = 9;
+  scene.add(lead);
+
+  rig.add(group);
+  plates.push({ group, label, lead, size: layer.size, baseY: layer.y, phase: i * 1.1 });
+});
+
+// ---------- Nœud IA au sommet ----------
+const aiGroup = new THREE.Group();
+aiGroup.position.y = 3.1;
+rig.add(aiGroup);
+
+const coreGeo = new THREE.IcosahedronGeometry(0.34, 1);
+const coreMat = new THREE.MeshPhysicalMaterial({
+  color: COLORS.cyan,
+  emissive: COLORS.cyan,
+  emissiveIntensity: 1.4,
+  metalness: 0.3,
+  roughness: 0.15,
+});
+const core = new THREE.Mesh(coreGeo, coreMat);
+aiGroup.add(core);
+
+// Cœur incandescent blanc au centre du nœud
+const hotCore = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTexture,
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.95,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+}));
+hotCore.scale.set(0.65, 0.65, 1);
+aiGroup.add(hotCore);
+
+const shellGeo = new THREE.IcosahedronGeometry(0.52, 1);
+const shellMat = new THREE.MeshBasicMaterial({
+  color: COLORS.indigo,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.55,
+});
+const shell = new THREE.Mesh(shellGeo, shellMat);
+aiGroup.add(shell);
+
+// Halo additive autour du nœud (sprite radial)
+const aiHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTexture,
+  color: COLORS.cyan,
+  transparent: true,
+  opacity: 0.7,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+}));
+aiHalo.scale.set(2.6, 2.6, 1);
+aiGroup.add(aiHalo);
+
+const aiLight = new THREE.PointLight(COLORS.cyan, 30, 12);
+aiGroup.add(aiLight);
+
+// Anneaux orbitaux fins autour du nœud IA
+const rings = [];
+[
+  { radius: 0.78, tilt: 0.9, speed: 0.55, color: COLORS.cyan, opacity: 0.65 },
+  { radius: 0.98, tilt: -0.6, speed: -0.38, color: COLORS.indigo, opacity: 0.5 },
+  { radius: 1.18, tilt: 0.35, speed: 0.22, color: COLORS.cyan, opacity: 0.3 },
+].forEach((cfg) => {
+  const holder = new THREE.Group();
+  holder.rotation.x = cfg.tilt;
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(cfg.radius, 0.008, 8, 96),
+    new THREE.MeshBasicMaterial({
+      color: cfg.color,
+      transparent: true,
+      opacity: cfg.opacity,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+  );
+  ring.rotation.x = Math.PI / 2;
+  holder.add(ring);
+  // Petite perle lumineuse qui circule sur l'anneau
+  const bead = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture,
+    color: cfg.color,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  }));
+  bead.scale.set(0.22, 0.22, 1);
+  bead.position.set(cfg.radius, 0, 0);
+  holder.add(bead);
+  aiGroup.add(holder);
+  rings.push({ holder, bead, radius: cfg.radius, speed: cfg.speed, angle: Math.random() * Math.PI * 2 });
+});
+
+const aiLabel = makeLabelSprite('IA', COLORS.cyan);
+aiLabel.scale.set(1.1, 0.28, 1);
+aiLabel.material.depthTest = false;
+aiLabel.renderOrder = 10;
+scene.add(aiLabel);
+
+const aiLeadGeo = new THREE.BufferGeometry().setFromPoints([
+  new THREE.Vector3(0, 0, 0),
+  new THREE.Vector3(1, 0, 0),
+]);
+const aiLead = new THREE.Line(aiLeadGeo, new THREE.LineBasicMaterial({
+  color: COLORS.cyan,
+  transparent: true,
+  opacity: 0.35,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+}));
+aiLead.renderOrder = 9;
+scene.add(aiLead);
+
+// Traînées verticales fines entre GOLD et le nœud IA
+const TRAIL_COUNT = 14;
+const trailData = [];
+const trailGeo = new THREE.BufferGeometry();
+const trailPos = new Float32Array(TRAIL_COUNT * 6);
+const trailCol = new Float32Array(TRAIL_COUNT * 6);
+for (let i = 0; i < TRAIL_COUNT; i++) {
+  trailData.push({
+    angle: Math.random() * Math.PI * 2,
+    radius: 0.12 + Math.random() * 0.42,
+    y: 1.8 + Math.random() * 1.2,
+    speed: 0.5 + Math.random() * 0.6,
+    len: 0.18 + Math.random() * 0.22,
+  });
+}
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 3));
+const trails = new THREE.LineSegments(trailGeo, new THREE.LineBasicMaterial({
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.55,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+}));
+rig.add(trails);
+
+// ---------- Nébuleuse de fond derrière la pile ----------
+{
+  const nebula = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture,
+    color: COLORS.indigo,
+    transparent: true,
+    opacity: 0.16,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  }));
+  nebula.material.fog = false;
+  nebula.scale.set(18, 12, 1);
+  nebula.position.set(4.5, 0.2, -9);
+  scene.add(nebula);
+
+  const nebulaCyan = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture,
+    color: COLORS.cyan,
+    transparent: true,
+    opacity: 0.07,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  }));
+  nebulaCyan.material.fog = false;
+  nebulaCyan.scale.set(10, 8, 1);
+  nebulaCyan.position.set(2.5, 3.4, -8);
+  scene.add(nebulaCyan);
+}
+
+// ---------- Poussière d'étoiles lointaine (statique, profondeur) ----------
+{
+  const STAR_COUNT = 700;
+  const sPos = new Float32Array(STAR_COUNT * 3);
+  const sCol = new Float32Array(STAR_COUNT * 3);
+  const starColor = new THREE.Color();
+  for (let i = 0; i < STAR_COUNT; i++) {
+    sPos[i * 3] = (Math.random() - 0.35) * 46;
+    sPos[i * 3 + 1] = (Math.random() - 0.4) * 26;
+    sPos[i * 3 + 2] = -6 - Math.random() * 26;
+    // Teintes froides variées, très discrètes
+    starColor.set(Math.random() < 0.25 ? COLORS.cyan : (Math.random() < 0.5 ? COLORS.indigo : COLORS.text));
+    const dim = 0.25 + Math.random() * 0.5;
+    sCol[i * 3] = starColor.r * dim;
+    sCol[i * 3 + 1] = starColor.g * dim;
+    sCol[i * 3 + 2] = starColor.b * dim;
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+  starGeo.setAttribute('color', new THREE.BufferAttribute(sCol, 3));
+  const starMat = new THREE.PointsMaterial({
+    size: 0.09,
+    map: glowTexture,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.55,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  const stars = new THREE.Points(starGeo, starMat);
+  stars.material.fog = false;
+  scene.add(stars);
+}
+
+// ---------- Flux de particules montantes ----------
+const PARTICLE_COUNT = 560;
+const Y_MIN = -2.2;
+const Y_MAX = 3.1;
+const positions = new Float32Array(PARTICLE_COUNT * 3);
+const colors = new Float32Array(PARTICLE_COUNT * 3);
+const speeds = new Float32Array(PARTICLE_COUNT);
+const radii = new Float32Array(PARTICLE_COUNT);
+const angles = new Float32Array(PARTICLE_COUNT);
+const spins = new Float32Array(PARTICLE_COUNT);
+
+const cBronze = new THREE.Color(COLORS.bronze);
+const cSilver = new THREE.Color(COLORS.silver);
+const cGold = new THREE.Color(COLORS.gold);
+const cCyan = new THREE.Color(COLORS.cyan);
+const tmpColor = new THREE.Color();
+
+function colorAtHeight(y) {
+  // Bronze en bas → argent → or → cyan au sommet
+  if (y < -0.75) tmpColor.lerpColors(cBronze, cSilver, (y - Y_MIN) / (-0.75 - Y_MIN));
+  else if (y < 0.9) tmpColor.lerpColors(cSilver, cGold, (y + 0.75) / 1.65);
+  else tmpColor.lerpColors(cGold, cCyan, (y - 0.9) / (Y_MAX - 0.9));
+  return tmpColor;
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const y = Y_MIN + Math.random() * (Y_MAX - Y_MIN);
+  angles[i] = Math.random() * Math.PI * 2;
+  radii[i] = 0.3 + Math.random() * 1.6;
+  speeds[i] = 0.35 + Math.random() * 0.55;
+  spins[i] = (Math.random() - 0.5) * 0.8;
+  positions[i * 3] = Math.cos(angles[i]) * radii[i];
+  positions[i * 3 + 1] = y;
+  positions[i * 3 + 2] = Math.sin(angles[i]) * radii[i];
+  const c = colorAtHeight(y);
+  colors[i * 3] = c.r;
+  colors[i * 3 + 1] = c.g;
+  colors[i * 3 + 2] = c.b;
+}
+
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+const particleMat = new THREE.PointsMaterial({
+  size: 0.075,
+  map: glowTexture,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.9,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  sizeAttenuation: true,
+});
+const particles = new THREE.Points(particleGeo, particleMat);
+rig.add(particles);
+
+// ---------- Interaction souris (parallaxe douce) ----------
+const mouse = { x: 0, y: 0 };
+const target = { rotY: 0, rotX: 0 };
+
+window.addEventListener('mousemove', (e) => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+// ---------- Resize ----------
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (reducedMotion) renderer.render(scene, camera);
+});
+
+// ---------- Boucle d'animation ----------
+const clock = new THREE.Clock();
+
+function update(t, dt) {
+  // Rotation lente + parallaxe souris (lerp)
+  target.rotY = t * 0.08 + mouse.x * 0.35;
+  target.rotX = mouse.y * 0.12;
+  rig.rotation.y += (target.rotY - rig.rotation.y) * 0.05;
+  rig.rotation.x += (target.rotX - rig.rotation.x) * 0.05;
+
+  // Flottement des plaques : deux sinus non commensurables + tilt organique
+  plates.forEach((p, i) => {
+    p.group.position.y = p.baseY
+      + Math.sin(t * 0.62 + p.phase) * 0.065
+      + Math.sin(t * 0.29 + p.phase * 1.7) * 0.045;
+    p.group.rotation.z = Math.sin(t * 0.4 + p.phase * 2.3) * 0.018;
+    p.group.rotation.x = Math.sin(t * 0.33 + p.phase) * 0.014;
+    // Label fixe à droite de la pile, suit le flottement vertical
+    const labelY = rig.position.y + p.group.position.y * rig.scale.y + 0.26;
+    p.label.position.set(rig.position.x + 3.55, labelY, 0);
+    // Ligne de rappel : du bord de la plaque (diagonale max) jusqu'au label
+    const x0 = rig.position.x + (p.size / 2) * Math.SQRT2 * rig.scale.x + 0.28;
+    const x1 = rig.position.x + 3.2;
+    const lp = p.lead.geometry.attributes.position.array;
+    lp[0] = x0; lp[1] = labelY - 0.02; lp[2] = 0;
+    lp[3] = x1; lp[4] = labelY - 0.02; lp[5] = 0;
+    p.lead.geometry.attributes.position.needsUpdate = true;
+  });
+
+  // Nœud IA : pulsation + rotation
+  aiGroup.position.y = 3.1 + Math.sin(t * 0.9) * 0.06 + Math.sin(t * 0.37) * 0.05;
+  const aiLabelY = rig.position.y + aiGroup.position.y * rig.scale.y;
+  aiLabel.position.set(rig.position.x + 3.55, aiLabelY, 0);
+  {
+    const lp = aiLead.geometry.attributes.position.array;
+    lp[0] = rig.position.x + 2.05; lp[1] = aiLabelY - 0.02; lp[2] = 0;
+    lp[3] = rig.position.x + 3.05; lp[4] = aiLabelY - 0.02; lp[5] = 0;
+    aiLead.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // Traînées montantes vers le nœud IA
+  {
+    const tp = trailGeo.attributes.position.array;
+    const tc = trailGeo.attributes.color.array;
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      const d = trailData[i];
+      d.y += d.speed * (dt || 0.016);
+      if (d.y > 3.0) {
+        d.y = 1.75;
+        d.angle = Math.random() * Math.PI * 2;
+        d.radius = 0.12 + Math.random() * 0.42;
+      }
+      const shrink = 1 - (d.y - 1.75) / 1.4 * 0.6;
+      const x = Math.cos(d.angle) * d.radius * shrink;
+      const z = Math.sin(d.angle) * d.radius * shrink;
+      tp[i * 6] = x; tp[i * 6 + 1] = d.y; tp[i * 6 + 2] = z;
+      tp[i * 6 + 3] = x; tp[i * 6 + 4] = d.y + d.len; tp[i * 6 + 5] = z;
+      const c = colorAtHeight(d.y);
+      tc[i * 6] = c.r * 0.4; tc[i * 6 + 1] = c.g * 0.4; tc[i * 6 + 2] = c.b * 0.4;
+      tc[i * 6 + 3] = c.r; tc[i * 6 + 4] = c.g; tc[i * 6 + 5] = c.b;
+    }
+    trailGeo.attributes.position.needsUpdate = true;
+    trailGeo.attributes.color.needsUpdate = true;
+  }
+  core.rotation.y = t * 0.5;
+  shell.rotation.y = -t * 0.3;
+  shell.rotation.x = t * 0.18;
+  const pulse = 1 + Math.sin(t * 2.2) * 0.08;
+  aiHalo.scale.set(2.6 * pulse, 2.6 * pulse, 1);
+  aiLight.intensity = 30 + Math.sin(t * 2.2) * 8;
+
+  // Anneaux orbitaux : précession lente + perles circulantes
+  rings.forEach((r, i) => {
+    r.holder.rotation.z = Math.sin(t * 0.25 + i * 2.1) * 0.25;
+    r.angle += r.speed * (dt || 0.016) * 2.2;
+    r.bead.position.set(Math.cos(r.angle) * r.radius, 0, Math.sin(r.angle) * r.radius);
+  });
+
+  // Particules montantes en spirale
+  const pos = particleGeo.attributes.position.array;
+  const col = particleGeo.attributes.color.array;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    let y = pos[i * 3 + 1] + speeds[i] * dt;
+    angles[i] += spins[i] * dt;
+    if (y > Y_MAX) {
+      y = Y_MIN;
+      angles[i] = Math.random() * Math.PI * 2;
+      radii[i] = 0.3 + Math.random() * 1.6;
+    }
+    // Resserrement progressif vers le nœud IA en haut
+    const squeeze = y > 1.6 ? Math.max(0.15, 1 - (y - 1.6) / (Y_MAX - 1.6) * 0.85) : 1;
+    const r = radii[i] * squeeze;
+    pos[i * 3] = Math.cos(angles[i]) * r;
+    pos[i * 3 + 1] = y;
+    pos[i * 3 + 2] = Math.sin(angles[i]) * r;
+    const c = colorAtHeight(y);
+    col[i * 3] = c.r;
+    col[i * 3 + 1] = c.g;
+    col[i * 3 + 2] = c.b;
+  }
+  particleGeo.attributes.position.needsUpdate = true;
+  particleGeo.attributes.color.needsUpdate = true;
+}
+
+if (reducedMotion) {
+  // Une seule frame statique, pose légèrement tournée pour la composition.
+  rig.rotation.y = 0.5;
+  update(0.5, 0);
+  renderer.render(scene, camera);
+} else {
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.elapsedTime;
+    update(t, dt);
+    renderer.render(scene, camera);
+  });
+}
+</script>
+</body>
+</html>

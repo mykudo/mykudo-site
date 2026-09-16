@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MYKUDO — Data Mesh orbital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --gold: #ffd666;
+    --text: #eaf0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 70% at 78% 12%, var(--bg-glow) 0%, transparent 65%),
+      var(--bg);
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .overlay {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 40px 6vw;
+    pointer-events: none;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.22em;
+  }
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 640px;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: clamp(34px, 4.6vw, 62px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+  h1 .gradient {
+    display: block;
+    background: linear-gradient(90deg, var(--indigo), var(--cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    margin-top: 22px;
+    font-size: clamp(15px, 1.3vw, 18px);
+    line-height: 1.6;
+    color: rgba(234, 240, 255, 0.72);
+    max-width: 480px;
+  }
+  .cta {
+    margin-top: 36px;
+    pointer-events: auto;
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 30px;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 16px;
+    color: var(--text);
+    background: linear-gradient(90deg, rgba(79,107,255,0.28), rgba(56,225,255,0.16));
+    border: 1px solid rgba(79, 107, 255, 0.55);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .cta:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 28px rgba(56, 225, 255, 0.25);
+    transform: translateY(-2px);
+  }
+  .cta .arrow { color: var(--cyan); }
+  @media (max-width: 720px) {
+    .overlay { padding: 28px 24px; }
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="brand">MYKUDO</div>
+    <div class="content">
+      <h1>
+        Vos plateformes IA, Data &amp; Cloud.
+        <span class="gradient">Conçues pour la production.</span>
+      </h1>
+      <p class="subtitle">
+        Architecture, gouvernance et industrialisation de vos domaines data.
+        Un écosystème fédéré, observable et prêt à passer à l'échelle.
+      </p>
+      <button class="cta" type="button">Discutons de votre projet <span class="arrow">&rarr;</span></button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x05081c, 0.02);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 2.2, 16);
+camera.lookAt(0, 0, 0);
+
+const COLORS = {
+  indigo: new THREE.Color('#4f6bff'),
+  cyan: new THREE.Color('#38e1ff'),
+  gold: new THREE.Color('#ffd666'),
+};
+
+// Groupe racine, décalé vers la droite pour laisser la place au texte.
+const system = new THREE.Group();
+system.position.set(4.6, 0.2, 0);
+scene.add(system);
+
+// --- Texture de halo (dégradé radial généré en canvas, aucun asset externe) ---
+function makeGlowTexture() {
+  const size = 128;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.25, 'rgba(255,255,255,0.55)');
+  g.addColorStop(0.6, 'rgba(255,255,255,0.12)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+const glowTexture = makeGlowTexture();
+
+function makeGlowSprite(color, scale, opacity) {
+  const mat = new THREE.SpriteMaterial({
+    map: glowTexture,
+    color,
+    transparent: true,
+    opacity,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.setScalar(scale);
+  return sprite;
+}
+
+// --- Nœud central : le catalogue / la gouvernance ---
+const core = new THREE.Group();
+const coreMesh = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(0.8, 1),
+  new THREE.MeshBasicMaterial({ color: COLORS.cyan, wireframe: true, transparent: true, opacity: 0.8 })
+);
+// Cœur lumineux : petite graine chaude + coquille cyan translucide (pas de disque blanc saturé).
+const coreInner = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(0.15, 3),
+  new THREE.MeshBasicMaterial({ color: 0xcdefff, transparent: true, opacity: 0.75 })
+);
+const coreShell = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(0.36, 3),
+  new THREE.MeshBasicMaterial({
+    color: COLORS.cyan, transparent: true, opacity: 0.3,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  })
+);
+// Enveloppe externe très légère, en contre-rotation, pour la richesse du hub.
+const coreOuter = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(1.0, 1),
+  new THREE.MeshBasicMaterial({ color: COLORS.indigo, wireframe: true, transparent: true, opacity: 0.22 })
+);
+core.add(coreMesh, coreInner, coreShell, coreOuter);
+// Halo gradué en couches douces plutôt qu'un seul glow dur.
+const coreGlowA = makeGlowSprite(COLORS.cyan, 2.4, 0.45);
+const coreGlowB = makeGlowSprite(COLORS.cyan, 4.4, 0.2);
+const coreGlowC = makeGlowSprite(COLORS.indigo, 8.0, 0.15);
+core.add(coreGlowA, coreGlowB, coreGlowC);
+// Anneaux orbitaux fins autour du hub.
+const coreRings = [];
+[
+  { r: 1.15, tiltX: 0.45, tiltZ: 0.0,  color: COLORS.cyan,   opacity: 0.45 },
+  { r: 1.45, tiltX: -0.85, tiltZ: 0.6, color: COLORS.gold,   opacity: 0.3 },
+  { r: 1.75, tiltX: 0.3, tiltZ: -0.85, color: COLORS.indigo, opacity: 0.4 },
+].forEach((def, i) => {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(def.r, 0.009, 8, 128),
+    new THREE.MeshBasicMaterial({
+      color: def.color, transparent: true, opacity: def.opacity,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    })
+  );
+  ring.rotation.set(Math.PI / 2 + def.tiltX, 0, def.tiltZ);
+  core.add(ring);
+  coreRings.push({ ring, speed: 0.22 + i * 0.16, baseTiltX: Math.PI / 2 + def.tiltX });
+});
+system.add(core);
+
+// --- Domaines data en orbite ---
+const domainDefs = [
+  { radius: 2.9, size: 0.46, speed: 0.14, phase: 0.0,  incl: 0.10, color: COLORS.indigo, spin: 0.5 },
+  { radius: 3.9, size: 0.34, speed: -0.10, phase: 2.1, incl: -0.22, color: COLORS.cyan,  spin: 0.8 },
+  { radius: 4.9, size: 0.55, speed: 0.075, phase: 4.0, incl: 0.30, color: COLORS.indigo, spin: 0.35 },
+  { radius: 5.8, size: 0.3, speed: -0.055, phase: 1.2, incl: -0.12, color: COLORS.gold,  spin: 1.1 },
+  { radius: 6.6, size: 0.42, speed: 0.045, phase: 5.1, incl: 0.18, color: COLORS.cyan,   spin: 0.65 },
+];
+
+const domains = domainDefs.map((def) => {
+  const group = new THREE.Group();
+  const mesh = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(def.size, 0),
+    new THREE.MeshBasicMaterial({ color: def.color, wireframe: true, transparent: true, opacity: 0.85 })
+  );
+  group.add(mesh);
+  const glow = makeGlowSprite(def.color, def.size * 4.5, 0.32);
+  group.add(glow);
+
+  // Petit nuage de particules autour du domaine (les data products du domaine).
+  const count = 26;
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const r = def.size * (1.5 + Math.random() * 1.4);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    pos[i * 3 + 1] = r * Math.cos(phi);
+    pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+  }
+  const cloudGeo = new THREE.BufferGeometry();
+  cloudGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const cloud = new THREE.Points(cloudGeo, new THREE.PointsMaterial({
+    color: def.color, size: 0.045, transparent: true, opacity: 0.7,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  group.add(cloud);
+
+  system.add(group);
+  return { def, group, mesh, cloud, glow };
+});
+
+// --- Anneaux d'orbite discrets ---
+domainDefs.forEach((def) => {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(def.radius, 0.006, 8, 160),
+    new THREE.MeshBasicMaterial({ color: COLORS.indigo, transparent: true, opacity: 0.14 })
+  );
+  ring.rotation.x = Math.PI / 2 + def.incl;
+  system.add(ring);
+});
+
+// --- Liens lumineux (centre <-> domaines, et domaines voisins) ---
+const LINK_SEGS = 24;
+function makeLink(color) {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((LINK_SEGS + 1) * 3), 3));
+  const mat = new THREE.LineBasicMaterial({
+    color, transparent: true, opacity: 0.3,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const line = new THREE.Line(geo, mat);
+  system.add(line);
+  return line;
+}
+
+const links = [];
+// Liens hub -> chaque domaine
+domains.forEach((d, i) => {
+  links.push({ line: makeLink(d.def.color), from: null, to: i, pulseOffset: i * 1.3, pulseSpeed: 1.1 + i * 0.17 });
+});
+// Liens entre domaines voisins (échanges de data products entre domaines)
+[[0, 1], [1, 2], [2, 4], [3, 4]].forEach(([a, b], i) => {
+  links.push({ line: makeLink(COLORS.cyan), from: a, to: b, pulseOffset: 2.4 + i * 1.7, pulseSpeed: 0.8 + i * 0.21 });
+});
+
+// --- Paquets de lumière voyageant le long des liens, avec traînée ---
+const TRAIL_LEN = 6;
+const packets = links.map((link, i) => {
+  const color = link.from === null ? domains[link.to].def.color : COLORS.gold;
+  const head = makeGlowSprite(color, 0.36, 0.9);
+  system.add(head);
+  const trail = [];
+  for (let k = 0; k < TRAIL_LEN; k++) {
+    const s = makeGlowSprite(color, 0.24 - k * 0.028, 0.4 * (1 - k / TRAIL_LEN));
+    system.add(s);
+    trail.push(s);
+  }
+  return { link, head, trail, t: (i * 0.37) % 1, speed: 0.10 + (i % 4) * 0.035 };
+});
+
+// --- Onde « battement de cœur » qui se propage du hub vers les domaines ---
+const HEARTBEAT_PERIOD = 4.4;
+const waveMat = new THREE.MeshBasicMaterial({
+  color: COLORS.cyan, transparent: true, opacity: 0,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+const wave = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 96), waveMat);
+wave.rotation.x = Math.PI / 2;
+system.add(wave);
+
+// --- Arcs de traînée orbitale derrière chaque domaine (fondu via vertexColors) ---
+const ARC_POINTS = 48;
+const orbitTrails = domains.map((d) => {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ARC_POINTS * 3), 3));
+  const colors = new Float32Array(ARC_POINTS * 3);
+  const c = d.def.color;
+  for (let i = 0; i < ARC_POINTS; i++) {
+    const f = Math.pow(1 - i / (ARC_POINTS - 1), 1.5) * 0.55;
+    colors[i * 3] = c.r * f;
+    colors[i * 3 + 1] = c.g * f;
+    colors[i * 3 + 2] = c.b * f;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.8,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  system.add(line);
+  return { d, line };
+});
+
+// --- Poussière d'étoiles proche, dans le plan du système ---
+let dust, bigStars;
+{
+  const count = 260;
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const r = 1.5 + Math.random() * 7.5;
+    const a = Math.random() * Math.PI * 2;
+    pos[i * 3] = Math.cos(a) * r;
+    pos[i * 3 + 1] = (Math.random() - 0.5) * 2.4;
+    pos[i * 3 + 2] = Math.sin(a) * r;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  dust = new THREE.Points(geo, new THREE.PointsMaterial({
+    color: 0xaebcff, size: 0.03, transparent: true, opacity: 0.4,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  system.add(dust);
+}
+
+// --- Champ d'étoiles en fond ---
+{
+  const count = 420;
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * 60;
+    pos[i * 3 + 1] = (Math.random() - 0.5) * 36;
+    pos[i * 3 + 2] = -8 - Math.random() * 26;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const stars = new THREE.Points(geo, new THREE.PointsMaterial({
+    color: 0x8fa2ff, size: 0.05, transparent: true, opacity: 0.5,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  scene.add(stars);
+
+  // Seconde couche : étoiles plus grosses et plus rares, pour la profondeur.
+  const count2 = 90;
+  const pos2 = new Float32Array(count2 * 3);
+  for (let i = 0; i < count2; i++) {
+    pos2[i * 3] = (Math.random() - 0.5) * 55;
+    pos2[i * 3 + 1] = (Math.random() - 0.5) * 34;
+    pos2[i * 3 + 2] = -5 - Math.random() * 18;
+  }
+  const geo2 = new THREE.BufferGeometry();
+  geo2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
+  bigStars = new THREE.Points(geo2, new THREE.PointsMaterial({
+    map: glowTexture, color: 0xbcd2ff, size: 0.22, transparent: true, opacity: 0.55,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  scene.add(bigStars);
+}
+
+// --- Positions et mise à jour ---
+const tmpFrom = new THREE.Vector3();
+const tmpTo = new THREE.Vector3();
+const tmpCtrl = new THREE.Vector3();
+
+// Extrémités + point de contrôle (arc doucement bombé vers le haut) d'un lien.
+function linkEndpoints(link) {
+  if (link.from === null) tmpFrom.set(0, 0, 0);
+  else tmpFrom.copy(domains[link.from].group.position);
+  tmpTo.copy(domains[link.to].group.position);
+  tmpCtrl.lerpVectors(tmpFrom, tmpTo, 0.5);
+  tmpCtrl.y += tmpFrom.distanceTo(tmpTo) * 0.16;
+}
+
+function bezierPoint(t, out) {
+  const a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t;
+  out.set(
+    a * tmpFrom.x + b * tmpCtrl.x + c * tmpTo.x,
+    a * tmpFrom.y + b * tmpCtrl.y + c * tmpTo.y,
+    a * tmpFrom.z + b * tmpCtrl.z + c * tmpTo.z
+  );
+}
+const tmpPoint = new THREE.Vector3();
+
+function orbitPoint(def, angle, out) {
+  out.set(Math.cos(angle) * def.radius, 0, Math.sin(angle) * def.radius);
+  // Inclinaison du plan orbital autour de l'axe X.
+  const y = -out.z * Math.sin(def.incl);
+  const z = out.z * Math.cos(def.incl);
+  out.y = y;
+  out.z = z;
+  return out;
+}
+
+function domainPosition(def, time, out) {
+  return orbitPoint(def, def.phase + time * def.speed, out);
+}
+
+function update(time) {
+  // Battement de cœur : impulsion périodique qui se propage du hub vers l'extérieur.
+  const hbT = (time % HEARTBEAT_PERIOD) / HEARTBEAT_PERIOD;
+  const waveRadius = 1.5 + hbT * 6.6;
+  wave.scale.setScalar(waveRadius);
+  waveMat.opacity = 0.24 * Math.min(1, hbT * 8) * Math.pow(1 - hbT, 1.8);
+  const corePulse = Math.exp(-hbT * 7);
+
+  // Orbites des domaines + rotation propre + flash au passage de l'onde
+  domains.forEach((d) => {
+    domainPosition(d.def, time, d.group.position);
+    d.group.position.y += Math.sin(time * 0.7 + d.def.phase * 2) * 0.09;
+    d.mesh.rotation.x = time * 0.25 * d.def.spin;
+    d.mesh.rotation.y = time * 0.5 * d.def.spin;
+    d.cloud.rotation.y = time * 0.12;
+    const flash = Math.exp(-Math.pow((waveRadius - d.def.radius) / 0.55, 2));
+    d.mesh.material.opacity = 0.7 + 0.3 * flash;
+    d.glow.material.opacity = 0.32 + 0.4 * flash;
+    d.glow.scale.setScalar(d.def.size * 4.5 * (1 + 0.35 * flash));
+  });
+
+  // Cœur : respiration lente + battement
+  core.rotation.y = time * 0.18;
+  const breathe = 1 + Math.sin(time * 1.4) * 0.04 + corePulse * 0.45;
+  coreInner.scale.setScalar(breathe);
+  coreShell.scale.setScalar(1 + corePulse * 0.3);
+  coreGlowA.material.opacity = 0.45 + corePulse * 0.2;
+  coreGlowB.material.opacity = 0.2 + corePulse * 0.12;
+  coreRings.forEach((r, i) => {
+    r.ring.rotation.z = time * r.speed * (i % 2 ? -1 : 1);
+    r.ring.rotation.x = r.baseTiltX + Math.sin(time * 0.3 + i * 2.1) * 0.12;
+  });
+
+  // Liens : arcs de Bézier + pulsation d'intensité
+  links.forEach((link) => {
+    linkEndpoints(link);
+    const attr = link.line.geometry.attributes.position;
+    for (let i = 0; i <= LINK_SEGS; i++) {
+      bezierPoint(i / LINK_SEGS, tmpPoint);
+      attr.setXYZ(i, tmpPoint.x, tmpPoint.y, tmpPoint.z);
+    }
+    attr.needsUpdate = true;
+    link.line.material.opacity = 0.22 + 0.3 * (0.5 + 0.5 * Math.sin(time * link.pulseSpeed + link.pulseOffset));
+  });
+
+  // Arcs de traînée orbitale : ~50° d'orbite derrière chaque domaine
+  orbitTrails.forEach(({ d, line }) => {
+    const attr = line.geometry.attributes.position;
+    const baseAngle = d.def.phase + time * d.def.speed;
+    const dir = Math.sign(d.def.speed) || 1;
+    for (let i = 0; i < ARC_POINTS; i++) {
+      const a = baseAngle - dir * (i / (ARC_POINTS - 1)) * 0.9;
+      orbitPoint(d.def, a, tmpFrom);
+      attr.setXYZ(i, tmpFrom.x, tmpFrom.y, tmpFrom.z);
+    }
+    attr.needsUpdate = true;
+  });
+
+  // Paquets : voyage le long des liens (data products en transit), tête + traînée
+  packets.forEach((p) => {
+    p.t = (p.t + p.speed * 0.016) % 1;
+    linkEndpoints(p.link);
+    bezierPoint(p.t, p.head.position);
+    // Fondu aux extrémités pour éviter les apparitions brutales.
+    const edge = Math.min(p.t, 1 - p.t);
+    const fade = Math.min(1, edge * 6);
+    p.head.material.opacity = fade * 0.85;
+    p.trail.forEach((s, k) => {
+      const tt = Math.max(0, p.t - (k + 1) * 0.022);
+      bezierPoint(tt, s.position);
+      s.material.opacity = fade * 0.4 * (1 - (k + 1) / (TRAIL_LEN + 1));
+    });
+    // Petit flash du domaine de destination à l'arrivée du paquet.
+    if (p.t > 0.9) {
+      const target = domains[p.link.to];
+      target.glow.material.opacity = Math.min(0.8, target.glow.material.opacity + (p.t - 0.9) * 3.5);
+    }
+  });
+
+  // Poussière en contre-rotation lente + scintillement doux des étoiles
+  dust.rotation.y = -time * 0.03;
+  bigStars.material.opacity = 0.45 + 0.15 * Math.sin(time * 0.9);
+  coreOuter.rotation.y = -time * 0.12;
+  coreOuter.rotation.x = time * 0.07;
+
+  // Rotation d'ensemble lente
+  system.rotation.y = time * 0.05;
+}
+
+// --- Parallaxe souris (lerp doux, pas d'OrbitControls) ---
+let targetTiltX = 0.12;
+let targetTiltZ = 0;
+let tiltX = 0.12;
+let tiltZ = 0;
+window.addEventListener('mousemove', (e) => {
+  const nx = (e.clientX / window.innerWidth) * 2 - 1;
+  const ny = (e.clientY / window.innerHeight) * 2 - 1;
+  targetTiltX = 0.12 + ny * 0.14;
+  targetTiltZ = -nx * 0.10;
+});
+
+function applyTilt() {
+  tiltX += (targetTiltX - tiltX) * 0.04;
+  tiltZ += (targetTiltZ - tiltZ) * 0.04;
+  system.rotation.x = tiltX;
+  system.rotation.z = tiltZ;
+}
+
+// --- Resize ---
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
+
+// --- Boucle de rendu (ou frame unique si reduced motion) ---
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clock = new THREE.Clock();
+
+if (reducedMotion) {
+  update(0);
+  applyTilt();
+  renderer.render(scene, camera);
+} else {
+  renderer.setAnimationLoop(() => {
+    update(clock.getElapsedTime());
+    applyTilt();
+    renderer.render(scene, camera);
+  });
+}
+</script>
+</body>
+</html>

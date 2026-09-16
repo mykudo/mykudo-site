@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mykudo — Réseau de neurones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --text: #eaf0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: radial-gradient(120% 110% at 85% 0%, var(--bg-glow) 0%, var(--bg) 55%) no-repeat var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .overlay {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    pointer-events: none;
+  }
+  .logo {
+    position: absolute;
+    top: 2.2rem;
+    left: clamp(1.25rem, 5vw, 4.5rem);
+    font-weight: 700;
+    font-size: 1.35rem;
+    letter-spacing: 0.14em;
+    color: var(--text);
+  }
+  .logo::after {
+    content: '';
+    display: inline-block;
+    width: 0.45em;
+    height: 0.45em;
+    margin-left: 0.35em;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--indigo), var(--cyan));
+    vertical-align: baseline;
+  }
+  .content {
+    position: absolute;
+    top: 50%;
+    left: clamp(1.25rem, 5vw, 4.5rem);
+    transform: translateY(-50%);
+    max-width: 38rem;
+  }
+  .content h1 {
+    font-weight: 700;
+    font-size: clamp(2rem, 4.4vw, 3.6rem);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+  .content h1 .grad {
+    display: block;
+    background: linear-gradient(90deg, var(--indigo) 0%, var(--cyan) 80%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .content p {
+    margin-top: 1.4rem;
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+    line-height: 1.6;
+    color: rgba(234, 240, 255, 0.72);
+    max-width: 30rem;
+  }
+  .cta {
+    pointer-events: auto;
+    display: inline-block;
+    margin-top: 2.2rem;
+    padding: 0.9rem 1.9rem;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--text);
+    background: linear-gradient(90deg, var(--indigo), #3a8dff);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 8px 32px rgba(79, 107, 255, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(56, 225, 255, 0.3);
+  }
+  @media (max-width: 720px) {
+    .content { max-width: 90%; }
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="logo">MYKUDO</div>
+    <div class="content">
+      <h1>Vos plateformes IA, Data &amp; Cloud.<span class="grad">Conçues pour la production.</span></h1>
+      <p>Cabinet d'ingénierie spécialisé en architectures data, plateformes cloud et systèmes d'IA industrialisés, du cadrage à la mise en production.</p>
+      <button class="cta" type="button">Discutons de votre projet</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const canvas = document.getElementById('scene');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.set(0, 0, 11);
+
+const INDIGO = new THREE.Color(0x4f6bff);
+const CYAN = new THREE.Color(0x38e1ff);
+
+// ---------- Textures (radial glow sprites, générées en canvas) ----------
+function glowTexture(size, inner, outer) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, inner);
+  g.addColorStop(0.35, outer);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+const nodeGlowTex = glowTexture(128, 'rgba(255,255,255,0.9)', 'rgba(90,140,255,0.35)');
+const pulseTex = glowTexture(64, 'rgba(255,255,255,1)', 'rgba(56,225,255,0.6)');
+
+// ---------- Construction du réseau ----------
+const group = new THREE.Group();
+scene.add(group);
+
+const LAYER_COUNTS = [7, 11, 14, 11, 7];
+const LAYER_SPACING = 2.1;
+const nodes = [];            // { pos, layer, energy, sprite, mesh, baseScale }
+const layers = [];           // indices de nœuds par couche
+
+const sphereGeo = new THREE.SphereGeometry(0.075, 16, 16);
+
+// disposition organique : anneau irrégulier + jitter 3D par couche
+for (let L = 0; L < LAYER_COUNTS.length; L++) {
+  const count = LAYER_COUNTS[L];
+  const x = (L - (LAYER_COUNTS.length - 1) / 2) * LAYER_SPACING;
+  const spread = 1.1 + Math.sin((L / (LAYER_COUNTS.length - 1)) * Math.PI) * 0.9;
+  const indices = [];
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2 + L * 0.7 + Math.sin(i * 12.9898 + L * 78.233) * 0.5;
+    const r = spread * (0.45 + 0.55 * Math.abs(Math.sin(i * 4.7 + L * 2.3)));
+    const pos = new THREE.Vector3(
+      x + (Math.sin(i * 7.1 + L * 3.7) * 0.35),
+      Math.cos(a) * r + Math.sin(i * 5.3 + L) * 0.25,
+      Math.sin(a) * r * 0.8 + Math.cos(i * 3.1 + L * 1.9) * 0.25
+    );
+
+    const t = L / (LAYER_COUNTS.length - 1);
+    const color = INDIGO.clone().lerp(CYAN, t * 0.75);
+
+    const mesh = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ color }));
+    mesh.position.copy(pos);
+    group.add(mesh);
+
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: nodeGlowTex,
+      color,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    }));
+    sprite.position.copy(pos);
+    const baseScale = 0.55;
+    sprite.scale.setScalar(baseScale);
+    group.add(sprite);
+
+    indices.push(nodes.length);
+    nodes.push({
+      pos, basePos: pos.clone(), layer: L, energy: 0, sprite, mesh, baseScale, baseColor: color,
+      driftPhase: Math.random() * Math.PI * 2, driftFreq: 0.4 + Math.random() * 0.5,
+      driftAmp: 0.05 + Math.random() * 0.05
+    });
+  }
+  layers.push(indices);
+}
+
+// ---------- Nœud de sortie (répond en fin de cascade) ----------
+const outputPos = new THREE.Vector3(
+  ((LAYER_COUNTS.length - 1) / 2) * LAYER_SPACING + 1.9, 0.05, 0.1
+);
+const outputMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(0.13, 20, 20),
+  new THREE.MeshBasicMaterial({ color: CYAN, fog: false })
+);
+outputMesh.position.copy(outputPos);
+group.add(outputMesh);
+const outputSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: nodeGlowTex, color: CYAN, transparent: true, opacity: 0.5,
+  blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+}));
+outputSprite.position.copy(outputPos);
+outputSprite.scale.setScalar(0.9);
+group.add(outputSprite);
+const outputNode = { pos: outputPos, basePos: outputPos.clone(), layer: LAYER_COUNTS.length,
+                     energy: 0, sprite: outputSprite, mesh: outputMesh, baseScale: 0.9,
+                     baseColor: CYAN, driftPhase: 0, driftFreq: 0.35, driftAmp: 0.04 };
+const outputIndex = nodes.length;
+nodes.push(outputNode);
+layers.push([outputIndex]);
+
+// connexions : chaque nœud → ses 3 plus proches voisins de la couche suivante,
+// + quelques connexions longues inter-couches (skip), + dernière couche → sortie
+const connections = []; // { a, b, layer, energy, span }
+for (let L = 0; L < LAYER_COUNTS.length - 1; L++) {
+  for (const ai of layers[L]) {
+    const sorted = layers[L + 1]
+      .map(bi => ({ bi, d: nodes[ai].pos.distanceTo(nodes[bi].pos) }))
+      .sort((u, v) => u.d - v.d)
+      .slice(0, 3);
+    for (const { bi } of sorted) connections.push({ a: ai, b: bi, layer: L, energy: 0, span: 1 });
+  }
+}
+// skip connections L → L+2 (déterministes, éparses)
+for (let L = 0; L < LAYER_COUNTS.length - 2; L++) {
+  layers[L].forEach((ai, k) => {
+    if ((k * 7 + L * 3) % 5 === 0) {
+      const cands = layers[L + 2]
+        .map(bi => ({ bi, d: nodes[ai].pos.distanceTo(nodes[bi].pos) }))
+        .sort((u, v) => u.d - v.d);
+      const pick = cands[Math.min(1 + (k % 2), cands.length - 1)];
+      connections.push({ a: ai, b: pick.bi, layer: L, energy: 0, span: 2 });
+    }
+  });
+}
+// dernière couche → nœud de sortie
+for (const ai of layers[LAYER_COUNTS.length - 1]) {
+  connections.push({ a: ai, b: outputIndex, layer: LAYER_COUNTS.length - 1, energy: 0, span: 1 });
+}
+
+const linePositions = new Float32Array(connections.length * 6);
+const lineColors = new Float32Array(connections.length * 6);
+connections.forEach((c, i) => {
+  nodes[c.a].pos.toArray(linePositions, i * 6);
+  nodes[c.b].pos.toArray(linePositions, i * 6 + 3);
+});
+const lineGeo = new THREE.BufferGeometry();
+lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+lineGeo.setAttribute('color', new THREE.BufferAttribute(lineColors, 3));
+const lines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({
+  vertexColors: true,
+  transparent: true,
+  opacity: 1,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+}));
+group.add(lines);
+
+// couleur de repos / couleur activée d'une connexion
+const REST_A = new THREE.Color(0x0a1240);
+const REST_B = new THREE.Color(0x0e1a4e);
+function paintConnections() {
+  const hot = new THREE.Color();
+  connections.forEach((c, i) => {
+    const e = Math.min(c.energy, 1);
+    const rest = (i % 2) ? REST_A : REST_B;
+    hot.copy(rest).lerp(CYAN, e * 0.95);
+    hot.toArray(lineColors, i * 6);
+    hot.toArray(lineColors, i * 6 + 3);
+  });
+  lineGeo.attributes.color.needsUpdate = true;
+}
+paintConnections();
+
+// ---------- Poussière d'étoiles en fond ----------
+function makeStars(count, spreadZmin, spreadZmax, size, opacity, tint) {
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * 36;
+    pos[i * 3 + 1] = (Math.random() - 0.5) * 22;
+    pos[i * 3 + 2] = spreadZmin + Math.random() * (spreadZmax - spreadZmin);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    map: pulseTex, color: tint, size, transparent: true, opacity,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, fog: false
+  });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  return mat;
+}
+const starMat = makeStars(300, -8, -3, 0.18, 0.7, 0xbccaff);   // proches, visibles
+const starFarMat = makeStars(380, -14, -8, 0.12, 0.45, 0x8ba0f0); // lointaines, discrètes
+
+// ---------- Profondeur : brume vers le fond ----------
+scene.fog = new THREE.Fog(0x05081c, 9.5, 15.5);
+
+// ---------- Impulsions (pool de points additifs) ----------
+const MAX_PULSES = 160;
+const PULSE_SLOTS = MAX_PULSES * 2; // tête + traînée
+const pulsePositions = new Float32Array(PULSE_SLOTS * 3);
+pulsePositions.fill(9999);
+const pulseGeo = new THREE.BufferGeometry();
+pulseGeo.setAttribute('position', new THREE.BufferAttribute(pulsePositions, 3));
+const pulsePoints = new THREE.Points(pulseGeo, new THREE.PointsMaterial({
+  map: pulseTex,
+  color: CYAN,
+  size: 0.42,
+  transparent: true,
+  opacity: 1,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  sizeAttenuation: true
+}));
+group.add(pulsePoints);
+
+const activePulses = []; // { conn, t, dur }
+const HOP_DURATION = 0.55;   // temps de parcours d'une connexion
+let nextWaveAt = 0.8;
+let pendingHops = [];        // { at, layer } : couches à déclencher en cascade
+
+function triggerLayer(L) {
+  for (const c of connections) {
+    if (c.layer === L && Math.random() < 0.8 && activePulses.length < MAX_PULSES) {
+      activePulses.push({ conn: c, t: 0, dur: HOP_DURATION * c.span * (0.9 + Math.random() * 0.25) });
+    }
+  }
+  for (const ni of layers[L]) nodes[ni].energy = Math.min(nodes[ni].energy + 1, 1.4);
+}
+
+// ---------- Cadrage : réseau décalé à droite ----------
+function layoutGroup() {
+  const aspect = window.innerWidth / window.innerHeight;
+  if (aspect > 1.1) {
+    group.position.set(2.25 * Math.min(aspect / 1.7, 1.4), 0.1, 0);
+    group.scale.setScalar(0.95);
+  } else {
+    // écrans étroits : réseau centré derrière le texte, plus discret
+    group.position.set(0, 0.4, -1.5);
+    group.scale.setScalar(0.85);
+  }
+}
+
+function resize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  layoutGroup();
+}
+window.addEventListener('resize', () => { resize(); if (reducedMotion) renderStatic(); });
+resize();
+
+// ---------- Interaction souris (inclinaison lerp) ----------
+let targetTiltX = 0, targetTiltY = 0;
+let tiltX = 0, tiltY = 0;
+window.addEventListener('mousemove', (e) => {
+  targetTiltY = (e.clientX / window.innerWidth - 0.5) * 0.5;
+  targetTiltX = (e.clientY / window.innerHeight - 0.5) * 0.35;
+});
+
+// ---------- Boucle ----------
+const clock = new THREE.Clock();
+let baseRot = 0.3;
+
+function step(dt, elapsed) {
+  // oscillation douce autour d'un angle de lecture + inclinaison souris
+  tiltX += (targetTiltX - tiltX) * Math.min(dt * 3, 1);
+  tiltY += (targetTiltY - tiltY) * Math.min(dt * 3, 1);
+  group.rotation.y = baseRot + Math.sin(elapsed * 0.17) * 0.16 + tiltY;
+  group.rotation.x = -0.06 + Math.sin(elapsed * 0.13 + 1.2) * 0.05 + tiltX * 0.8;
+
+  // vagues en cascade, rythme légèrement organique
+  if (elapsed >= nextWaveAt) {
+    nextWaveAt = elapsed + 1.9 + Math.random() * 1.0;
+    for (let L = 0; L < LAYER_COUNTS.length; L++) {
+      pendingHops.push({ at: elapsed + L * HOP_DURATION * (0.95 + Math.random() * 0.15), layer: L });
+    }
+  }
+  pendingHops = pendingHops.filter(h => {
+    if (elapsed >= h.at) { triggerLayer(h.layer); return false; }
+    return true;
+  });
+
+  // avancement des impulsions (les connexions traversées s'illuminent)
+  const tmp = new THREE.Vector3();
+  for (let i = activePulses.length - 1; i >= 0; i--) {
+    const p = activePulses[i];
+    p.t += dt / p.dur;
+    // la connexion brille le plus au passage du milieu, puis retombe
+    const glow = Math.sin(Math.min(p.t, 1) * Math.PI);
+    p.conn.energy = Math.max(p.conn.energy, glow);
+    if (p.t >= 1) {
+      const target = nodes[p.conn.b];
+      target.energy = Math.min(target.energy + (target === outputNode ? 1.3 : 0.9), 1.6);
+      activePulses.splice(i, 1);
+    }
+  }
+  for (let i = 0; i < MAX_PULSES; i++) {
+    if (i < activePulses.length) {
+      const p = activePulses[i];
+      const t = Math.min(p.t, 1);
+      tmp.lerpVectors(nodes[p.conn.a].pos, nodes[p.conn.b].pos, t);
+      tmp.toArray(pulsePositions, i * 6);
+      // traînée : un second point légèrement en retrait, lit le sens du flux
+      tmp.lerpVectors(nodes[p.conn.a].pos, nodes[p.conn.b].pos, Math.max(t - 0.09, 0));
+      tmp.toArray(pulsePositions, i * 6 + 3);
+    } else {
+      for (let k = 0; k < 6; k++) pulsePositions[i * 6 + k] = 9999;
+    }
+  }
+  pulseGeo.attributes.position.needsUpdate = true;
+
+  // flottement organique des nœuds (lignes et impulsions suivent)
+  for (const n of nodes) {
+    const t = elapsed * n.driftFreq + n.driftPhase;
+    n.pos.set(
+      n.basePos.x + Math.sin(t) * n.driftAmp,
+      n.basePos.y + Math.sin(t * 1.31 + 2.1) * n.driftAmp,
+      n.basePos.z + Math.cos(t * 0.83 + 4.2) * n.driftAmp
+    );
+    n.mesh.position.copy(n.pos);
+    n.sprite.position.copy(n.pos);
+  }
+  connections.forEach((c, i) => {
+    nodes[c.a].pos.toArray(linePositions, i * 6);
+    nodes[c.b].pos.toArray(linePositions, i * 6 + 3);
+  });
+  lineGeo.attributes.position.needsUpdate = true;
+
+  // décroissance des énergies : connexions et nœuds → glow
+  for (const c of connections) c.energy *= Math.exp(-dt * 3.2);
+  paintConnections();
+
+  for (const n of nodes) {
+    n.energy *= Math.exp(-dt * 2.2);
+    const e = Math.min(n.energy, 1.1);
+    n.sprite.scale.setScalar(n.baseScale * (1 + e * 1.05));
+    n.sprite.material.opacity = 0.35 + e * 0.45;
+    n.mesh.scale.setScalar(1 + e * 0.5);
+    // bascule chromatique vers le cyan quand le nœud est actif
+    n.sprite.material.color.copy(n.baseColor).lerp(CYAN, Math.min(e, 1) * 0.7);
+    n.mesh.material.color.copy(n.baseColor).lerp(CYAN, Math.min(e, 1) * 0.7);
+  }
+
+  // le nœud de sortie « respire » même au repos
+  const breathe = 0.5 + Math.sin(elapsed * 1.4) * 0.12;
+  const oe = Math.min(Math.max(outputNode.energy, 0.22), 1.05);
+  outputSprite.material.opacity = Math.min(breathe + oe * 0.5, 0.95);
+  outputSprite.scale.setScalar(outputNode.baseScale * (1 + oe * 1.4));
+  outputMesh.scale.setScalar(1 + oe * 0.55);
+
+  // scintillement discret des étoiles
+  starMat.opacity = 0.5 + Math.sin(elapsed * 0.9) * 0.1;
+  starFarMat.opacity = 0.32 + Math.sin(elapsed * 0.6 + 2) * 0.07;
+
+  renderer.render(scene, camera);
+}
+
+function renderStatic() {
+  // une frame figée : quelques nœuds allumés pour donner vie sans animation
+  group.rotation.y = 0.35;
+  group.rotation.x = -0.08;
+  nodes.forEach((n, i) => {
+    const e = (i % 4 === 0) ? 0.9 : 0;
+    n.sprite.scale.setScalar(n.baseScale * (1 + e * 1.6));
+    n.sprite.material.opacity = 0.35 + e * 0.6;
+  });
+  connections.forEach((c, i) => { c.energy = (i % 5 === 0) ? 0.8 : 0; });
+  paintConnections();
+  renderer.render(scene, camera);
+}
+
+if (reducedMotion) {
+  renderStatic();
+} else {
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    step(dt, clock.elapsedTime);
+  });
+}
+</script>
+</body>
+</html>

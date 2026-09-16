@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MYKUDO — Champ de particules immersif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --text: #eaf0ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 560px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 70% at 85% 5%, var(--bg-glow) 0%, transparent 60%),
+      var(--bg);
+  }
+
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Vignette sombre derrière la zone de texte pour garantir la lisibilité */
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 62% 58% at 25% 50%, rgba(3, 5, 18, 0.70) 0%, rgba(3, 5, 18, 0.34) 48%, rgba(3, 5, 18, 0.10) 76%, transparent 100%);
+    z-index: 1;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    padding: 40px clamp(24px, 6vw, 96px);
+    pointer-events: none;
+  }
+
+  .brand {
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 0.35em;
+    color: var(--text);
+  }
+
+  .hero-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 720px;
+  }
+
+  h1 {
+    font-weight: 700;
+    font-size: clamp(2.2rem, 5.2vw, 4.2rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  h1 .gradient {
+    display: block;
+    background: linear-gradient(90deg, var(--indigo) 0%, var(--cyan) 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .subtitle {
+    margin-top: 24px;
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    font-weight: 400;
+    color: rgba(234, 240, 255, 0.72);
+    max-width: 540px;
+    line-height: 1.6;
+  }
+
+  .cta {
+    pointer-events: auto;
+    margin-top: 40px;
+    align-self: flex-start;
+    display: inline-block;
+    padding: 16px 34px;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    background: linear-gradient(90deg, rgba(79, 107, 255, 0.28), rgba(56, 225, 255, 0.16));
+    border: 1px solid rgba(79, 107, 255, 0.65);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .cta:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 32px rgba(56, 225, 255, 0.28);
+    transform: translateY(-2px);
+  }
+
+  .cta:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 640px) {
+    .overlay { padding: 28px 20px; }
+    .subtitle { font-size: 0.95rem; }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="brand">MYKUDO</div>
+    <div class="hero-content">
+      <h1>
+        Vos plateformes IA, Data &amp; Cloud.
+        <span class="gradient">Conçues pour la production.</span>
+      </h1>
+      <p class="subtitle">
+        Cabinet d'ingénierie spécialisé dans la conception et l'industrialisation
+        de plateformes intelligence artificielle, données et cloud, de l'architecture
+        au run.
+      </p>
+      <button class="cta" type="button">Discutons de votre projet</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const canvas = document.getElementById('scene');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: false,
+  alpha: true,
+  powerPreference: 'high-performance'
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
+camera.position.set(0, 14, 46);
+camera.lookAt(0, -2, 0);
+
+// ---------------------------------------------------------------------------
+// Nappe de particules : grille étendue en X/Z, ondulée par le vertex shader.
+// ---------------------------------------------------------------------------
+const COLS = 320;
+const ROWS = 150;
+const COUNT = COLS * ROWS;          // 48 000 particules
+const WIDTH = 170;
+const DEPTH = 110;
+
+const positions = new Float32Array(COUNT * 3);
+const seeds = new Float32Array(COUNT);
+
+let i = 0;
+for (let r = 0; r < ROWS; r++) {
+  for (let c = 0; c < COLS; c++) {
+    const u = c / (COLS - 1);
+    const v = r / (ROWS - 1);
+    // Léger jitter pour casser la régularité de la grille
+    positions[i * 3]     = (u - 0.5) * WIDTH + (Math.random() - 0.5) * 0.45;
+    positions[i * 3 + 1] = 0;
+    positions[i * 3 + 2] = (v - 0.5) * DEPTH + (Math.random() - 0.5) * 0.45;
+    seeds[i] = Math.random();
+    i++;
+  }
+}
+
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+
+const uniforms = {
+  uTime:          { value: 0 },
+  uMouse:         { value: new THREE.Vector3(9999, 0, 9999) },
+  uMouseStrength: { value: 0 },
+  uPixelRatio:    { value: renderer.getPixelRatio() },
+  uIndigo:        { value: new THREE.Color('#4f6bff') },
+  uCyan:          { value: new THREE.Color('#38e1ff') }
+};
+
+const vertexShader = /* glsl */`
+  uniform float uTime;
+  uniform vec3  uMouse;
+  uniform float uMouseStrength;
+  uniform float uPixelRatio;
+
+  attribute float aSeed;
+
+  varying float vAltitude;
+  varying float vSpeed;
+  varying float vSeed;
+  varying float vDepthFade;
+
+  // Bruit de valeur 2D léger et suffisant pour une houle organique
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+  float noise(vec2 p) {
+    vec2 ip = floor(p);
+    vec2 fp = fract(p);
+    fp = fp * fp * (3.0 - 2.0 * fp);
+    float a = hash(ip);
+    float b = hash(ip + vec2(1.0, 0.0));
+    float c = hash(ip + vec2(0.0, 1.0));
+    float d = hash(ip + vec2(1.0, 1.0));
+    return mix(mix(a, b, fp.x), mix(c, d, fp.x), fp.y);
+  }
+
+  float surface(vec2 p, float t) {
+    // Courant directionnel : toute la nappe dérive lentement
+    p += vec2(t * 0.9, -t * 0.35);
+
+    float h = 0.0;
+    // Deux trains de vagues croisés, directions obliques
+    h += sin(dot(p, vec2(0.062, 0.048)) + t * 0.50) * 2.4;
+    h += sin(dot(p, vec2(-0.035, 0.095)) - t * 0.38) * 1.8;
+    h += sin(dot(p, vec2(0.021, -0.058)) + t * 0.26) * 2.0;
+    // Grande masse organique
+    h += (noise(p * 0.040 + vec2(t * 0.05, -t * 0.04)) - 0.5) * 6.8;
+    // Détail fin
+    h += (noise(p * 0.17  + vec2(-t * 0.09, t * 0.07)) - 0.5) * 1.4;
+    // Crêtes accentuées : les sommets sont resserrés et pointus
+    float n = clamp((h + 7.2) / 14.4, 0.0, 1.0);
+    n = pow(n, 1.65);
+    return n * 15.5 - 6.5;
+  }
+
+  void main() {
+    vec3 pos = position;
+    float t = uTime;
+
+    // Houle organique + dérivée temporelle approx. pour teinter par "vitesse"
+    float h0 = surface(pos.xz, t);
+    float h1 = surface(pos.xz, t + 0.12);
+    pos.y = h0;
+    vSpeed = clamp(abs(h1 - h0) * 3.2, 0.0, 1.0);
+
+    // Onde de répulsion / ondulation locale autour de la souris
+    vec2 toMouse = pos.xz - uMouse.xz;
+    float dist = length(toMouse);
+    float influence = exp(-dist * dist * 0.011) * uMouseStrength;
+    // Répulsion radiale dans le plan
+    pos.xz += normalize(toMouse + vec2(0.0001)) * influence * 6.0;
+    // Double anneau qui se propage vers l'extérieur, atténué avec la distance
+    float ripple = sin(dist * 0.75 - t * 6.5) * exp(-dist * 0.11)
+                 + 0.5 * sin(dist * 1.6 - t * 9.0) * exp(-dist * 0.18);
+    pos.y += ripple * uMouseStrength * 4.5 + influence * 3.2;
+
+    vAltitude = clamp((pos.y + 6.5) / 14.0, 0.0, 1.0);
+    vSeed = aSeed;
+
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+
+    // Taille dépendante de la distance caméra + variation par particule
+    float dz = -mvPosition.z;
+    // Bokeh : les particules très proches grossissent nettement
+    float bokeh = 1.0 + smoothstep(52.0, 30.0, dz) * (0.8 + aSeed * 1.6);
+    float size = (0.9 + aSeed * 1.4) * (1.0 + vSpeed * 0.8) * bokeh;
+    gl_PointSize = size * uPixelRatio * (120.0 / dz);
+    gl_PointSize = clamp(gl_PointSize, 0.5, 16.0);
+
+    // Profondeur dramatique : lointain quasi éteint, premier plan brillant
+    vDepthFade = smoothstep(135.0, 55.0, dz) * 0.85 + smoothstep(72.0, 34.0, dz) * 0.65;
+    // Les grosses particules bokeh deviennent translucides (flou de mise au point)
+    vDepthFade *= 1.0 - smoothstep(44.0, 30.0, dz) * 0.45;
+  }
+`;
+
+const fragmentShader = /* glsl */`
+  precision highp float;
+
+  uniform float uTime;
+  uniform vec3 uIndigo;
+  uniform vec3 uCyan;
+
+  varying float vAltitude;
+  varying float vSpeed;
+  varying float vSeed;
+  varying float vDepthFade;
+
+  void main() {
+    // Point rond au falloff doux
+    vec2 uv = gl_PointCoord - 0.5;
+    float d = length(uv);
+    float alpha = smoothstep(0.5, 0.05, d);
+
+    // Couleur en 3 étapes : navy profond en creux -> indigo -> cyan sur crêtes
+    vec3 deepNavy = vec3(0.075, 0.115, 0.46); // navy lisible, entre #0a1358 et l'indigo
+    float a = pow(vAltitude, 1.15);
+    float f = clamp(a + vSpeed * 0.22, 0.0, 1.0);
+    vec3 color = f < 0.52
+      ? mix(deepNavy, uIndigo, f / 0.52)
+      : mix(uIndigo, uCyan, (f - 0.52) / 0.48);
+    // Halo d'énergie sur les crêtes les plus hautes
+    color += uCyan * smoothstep(0.85, 1.0, f) * 0.35;
+
+    // Scintillement subtil, désynchronisé par particule
+    float twinkle = 0.88 + 0.12 * sin(uTime * (1.2 + vSeed * 2.4) + vSeed * 40.0);
+
+    alpha *= (0.18 + 0.74 * a) * twinkle * vDepthFade;
+
+    gl_FragColor = vec4(color * (0.9 + vSpeed * 0.5 + a * 0.5), alpha);
+  }
+`;
+
+const material = new THREE.ShaderMaterial({
+  uniforms,
+  vertexShader,
+  fragmentShader,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+
+const points = new THREE.Points(geometry, material);
+scene.add(points);
+
+// ---------------------------------------------------------------------------
+// Lucioles : quelques grosses particules lumineuses qui dérivent au-dessus
+// de la nappe, avec halo doux et pulsation lente.
+// ---------------------------------------------------------------------------
+const FLY_COUNT = 90;
+const flyPositions = new Float32Array(FLY_COUNT * 3);
+const flySeeds = new Float32Array(FLY_COUNT);
+for (let f = 0; f < FLY_COUNT; f++) {
+  flyPositions[f * 3]     = (Math.random() - 0.5) * WIDTH * 0.95;
+  flyPositions[f * 3 + 1] = 2 + Math.random() * 14;
+  flyPositions[f * 3 + 2] = (Math.random() - 0.5) * DEPTH * 0.95;
+  flySeeds[f] = Math.random();
+}
+const flyGeometry = new THREE.BufferGeometry();
+flyGeometry.setAttribute('position', new THREE.BufferAttribute(flyPositions, 3));
+flyGeometry.setAttribute('aSeed', new THREE.BufferAttribute(flySeeds, 1));
+
+const flyMaterial = new THREE.ShaderMaterial({
+  uniforms,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexShader: /* glsl */`
+    uniform float uTime;
+    uniform float uPixelRatio;
+    attribute float aSeed;
+    varying float vSeed;
+    varying float vDepthFade;
+
+    void main() {
+      vec3 pos = position;
+      float t = uTime;
+      // Dérive lente pseudo-aléatoire, chaque luciole a sa trajectoire
+      pos.x += sin(t * (0.10 + aSeed * 0.12) + aSeed * 31.0) * 7.0;
+      pos.z += cos(t * (0.08 + aSeed * 0.10) + aSeed * 47.0) * 5.0;
+      pos.y += sin(t * (0.16 + aSeed * 0.14) + aSeed * 13.0) * 2.6;
+
+      vSeed = aSeed;
+      vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+
+      float size = 5.5 + aSeed * 6.5;
+      gl_PointSize = size * uPixelRatio * (120.0 / -mvPosition.z);
+      gl_PointSize = clamp(gl_PointSize, 2.0, 26.0);
+      vDepthFade = smoothstep(150.0, 45.0, -mvPosition.z);
+    }
+  `,
+  fragmentShader: /* glsl */`
+    precision highp float;
+    uniform float uTime;
+    uniform vec3 uIndigo;
+    uniform vec3 uCyan;
+    varying float vSeed;
+    varying float vDepthFade;
+
+    void main() {
+      vec2 uv = gl_PointCoord - 0.5;
+      float d = length(uv);
+      // Cœur brillant + halo très doux
+      float core = smoothstep(0.18, 0.02, d);
+      float halo = smoothstep(0.5, 0.06, d) * 0.5;
+      // Pulsation lente, désynchronisée
+      float pulse = 0.55 + 0.45 * sin(uTime * (0.7 + vSeed * 1.1) + vSeed * 50.0);
+      vec3 color = mix(uCyan, uIndigo, vSeed * 0.6);
+      float alpha = (core + halo) * pulse * vDepthFade * 0.9;
+      gl_FragColor = vec4(color * (1.2 + core * 0.8), alpha);
+    }
+  `
+});
+scene.add(new THREE.Points(flyGeometry, flyMaterial));
+
+// ---------------------------------------------------------------------------
+// Souris : projection du curseur sur le plan y=0, lissée pour un effet fluide
+// ---------------------------------------------------------------------------
+const raycaster = new THREE.Raycaster();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const ndc = new THREE.Vector2();
+const mouseTarget = new THREE.Vector3(9999, 0, 9999);
+const hit = new THREE.Vector3();
+let mouseStrengthTarget = 0;
+
+function onMouseMove(event) {
+  const rect = canvas.getBoundingClientRect();
+  ndc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  ndc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(ndc, camera);
+  if (raycaster.ray.intersectPlane(groundPlane, hit)) {
+    mouseTarget.copy(hit);
+    mouseStrengthTarget = 1;
+  }
+}
+
+function onMouseLeave() {
+  mouseStrengthTarget = 0;
+}
+
+// ---------------------------------------------------------------------------
+// Resize
+// ---------------------------------------------------------------------------
+function resize() {
+  const hero = canvas.parentElement;
+  const w = hero.clientWidth;
+  const h = hero.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  uniforms.uPixelRatio.value = renderer.getPixelRatio();
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ---------------------------------------------------------------------------
+// Boucle de rendu (ou frame unique si prefers-reduced-motion)
+// ---------------------------------------------------------------------------
+if (reducedMotion) {
+  uniforms.uTime.value = 8.0;
+  renderer.render(scene, camera);
+} else {
+  window.addEventListener('mousemove', onMouseMove, { passive: true });
+  window.addEventListener('mouseleave', onMouseLeave);
+
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    uniforms.uTime.value = t;
+
+    // Lissage de la position et de l'intensité de la souris
+    uniforms.uMouse.value.lerp(mouseTarget, 0.10);
+    uniforms.uMouseStrength.value +=
+      (mouseStrengthTarget - uniforms.uMouseStrength.value) * 0.06;
+
+    // Lent balancement de caméra pour donner de la vie à la scène
+    camera.position.x = Math.sin(t * 0.07) * 3.2;
+    camera.position.y = 14 + Math.sin(t * 0.05) * 1.1;
+    camera.lookAt(0, -2, 0);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+}
+</script>
+
+</body>
+</html>

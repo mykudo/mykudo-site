@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mykudo — Le raffinage de la donnée</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --bronze: #b48240;
+    --silver: #bec6d7;
+    --gold: #ffd666;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg-deep);
+    color: #e8ecf8;
+    overflow-x: hidden;
+  }
+  .hero {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(ellipse 90% 80% at 70% 45%, var(--bg-glow) 0%, var(--bg-deep) 68%);
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .overlay {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 40px 64px;
+    pointer-events: none;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.22em;
+    color: #fff;
+  }
+  .brand .dot { color: var(--cyan); }
+  .headline {
+    margin-top: auto;
+    margin-bottom: auto;
+    max-width: 620px;
+  }
+  h1 {
+    font-size: clamp(38px, 4.6vw, 64px);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    background: linear-gradient(100deg, #ffffff 0%, var(--indigo) 55%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .headline p {
+    margin-top: 22px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: rgba(210, 220, 245, 0.72);
+    max-width: 480px;
+  }
+  .cta {
+    pointer-events: auto;
+    display: inline-block;
+    margin-top: 36px;
+    width: fit-content;
+    padding: 15px 34px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    color: #fff;
+    background: linear-gradient(100deg, var(--indigo), #3a53d8);
+    border: 1px solid rgba(120, 150, 255, 0.55);
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 0 28px rgba(79, 107, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 44px rgba(56, 225, 255, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .stage-labels {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    pointer-events: none;
+  }
+  .stage-label {
+    position: absolute;
+    transform: translate(-100%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .stage-label.visible { opacity: 1; }
+  .stage-label::after {
+    content: '';
+    width: 42px;
+    height: 1px;
+    background: linear-gradient(90deg, currentColor, transparent);
+    opacity: 0.7;
+  }
+  .stage-label.bronze { color: var(--bronze); }
+  .stage-label.silver { color: var(--silver); }
+  .stage-label.gold   { color: var(--gold); }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="stage-labels">
+    <div class="stage-label bronze" id="label-bronze">Bronze</div>
+    <div class="stage-label silver" id="label-silver">Silver</div>
+    <div class="stage-label gold"   id="label-gold">Gold</div>
+  </div>
+  <div class="overlay">
+    <div class="brand">MYKUDO<span class="dot">.</span></div>
+    <div class="headline">
+      <h1>Vos plateformes IA, Data &amp; Cloud.<br>Conçues pour la production.</h1>
+      <p>De la donnée brute à la valeur métier : nous concevons des architectures qui raffinent, fiabilisent et délivrent.</p>
+      <button class="cta">Discutons de votre projet</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 3.4, 28);
+const LOOK_Y = 0.4;
+
+// ---- Géométrie du raffinage --------------------------------------------
+const Y_BOTTOM = -11.5, Y_TOP = 10.5;
+const Y_BRONZE = -6, Y_SILVER = 0, Y_GOLD = 6, Y_APEX = 10.2;
+
+const COL_BRONZE = new THREE.Color('#b48240');
+const COL_RAW    = new THREE.Color('#4a3826');
+const COL_BRONZE_CLEAN = new THREE.Color('#9a6f3c');
+const COL_SILVER = new THREE.Color('#bec6d7');
+const COL_GOLD   = new THREE.Color('#ffd666');
+const COL_CYAN   = new THREE.Color('#38e1ff');
+const COL_INDIGO = new THREE.Color('#4f6bff');
+
+const column = new THREE.Group();
+scene.add(column);
+
+// Position de la colonne : à droite de l'écran
+function columnX() {
+  const aspect = window.innerWidth / window.innerHeight;
+  return Math.min(9.5, 5.5 * aspect * 0.85);
+}
+column.position.x = columnX();
+column.position.y = -0.7;
+
+// ---- Anneaux / portails -------------------------------------------------
+function makeRing(y, color, radius) {
+  const g = new THREE.Group();
+  g.position.y = y;
+
+  const torus = new THREE.Mesh(
+    new THREE.TorusGeometry(radius, 0.055, 16, 96),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
+  );
+  torus.rotation.x = Math.PI / 2;
+  g.add(torus);
+
+  // halo interne : disque très transparent
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 64),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.06, side: THREE.DoubleSide, depthWrite: false })
+  );
+  disc.rotation.x = Math.PI / 2;
+  g.add(disc);
+
+  // glow sprite
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture(color), transparent: true, opacity: 0.5,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  }));
+  glow.scale.set(radius * 4.4, radius * 1.6, 1);
+  g.add(glow);
+
+  column.add(g);
+  return { group: g, torus, disc, glow, baseR: radius, phase: Math.random() * Math.PI * 2 };
+}
+
+let glowCache = {};
+function glowTexture(color) {
+  const key = '#' + color.toString(16);
+  if (glowCache[key]) return glowCache[key];
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  const col = new THREE.Color(color);
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, `rgba(${(col.r*255)|0},${(col.g*255)|0},${(col.b*255)|0},0.85)`);
+  grad.addColorStop(0.35, `rgba(${(col.r*255)|0},${(col.g*255)|0},${(col.b*255)|0},0.25)`);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  glowCache[key] = tex;
+  return tex;
+}
+
+const ringBronze = makeRing(Y_BRONZE, 0xb48240, 2.6);
+const ringSilver = makeRing(Y_SILVER, 0xbec6d7, 1.9);
+const ringGold   = makeRing(Y_GOLD,   0xffd666, 1.3);
+
+// ---- Point de convergence au sommet -------------------------------------
+const apex = new THREE.Group();
+apex.position.y = Y_APEX;
+const apexCore = new THREE.Mesh(
+  new THREE.SphereGeometry(0.22, 24, 24),
+  new THREE.MeshBasicMaterial({ color: 0xffffff })
+);
+apex.add(apexCore);
+const apexGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTexture(0x38e1ff), transparent: true, opacity: 0.9,
+  blending: THREE.AdditiveBlending, depthWrite: false
+}));
+apexGlow.scale.set(5, 5, 1);
+apex.add(apexGlow);
+const apexGlow2 = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTexture(0xffd666), transparent: true, opacity: 0.5,
+  blending: THREE.AdditiveBlending, depthWrite: false
+}));
+apexGlow2.scale.set(2.4, 2.4, 1);
+apex.add(apexGlow2);
+column.add(apex);
+
+// fin faisceau lumineux entre l'anneau gold et l'apex
+const beam = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.035, 0.09, Y_APEX - Y_GOLD, 12, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0x9fefff, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false })
+);
+beam.position.y = (Y_APEX + Y_GOLD) / 2;
+column.add(beam);
+
+// halo vertical indigo derrière la colonne, pour asseoir la composition
+const columnHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTexture(0x2a3aa8), transparent: true, opacity: 0.5,
+  blending: THREE.AdditiveBlending, depthWrite: false
+}));
+columnHalo.scale.set(17, 34, 1);
+columnHalo.position.set(0, -0.5, -4);
+column.add(columnHalo);
+
+// ---- Particules ----------------------------------------------------------
+const N = 2400;
+const positions = new Float32Array(N * 3);
+const colors = new Float32Array(N * 3);
+const sizes = new Float32Array(N);
+
+// état par particule
+const pT = new Float32Array(N);        // progression 0..1
+const pSpeed = new Float32Array(N);
+const pAngle = new Float32Array(N);    // angle de base
+const pSpin = new Float32Array(N);     // vitesse angulaire brute
+const pSeed = new Float32Array(N);
+const pStrand = new Float32Array(N);   // brin d'hélice (0..2)
+
+for (let i = 0; i < N; i++) {
+  pT[i] = Math.random();
+  pSpeed[i] = 0.028 + Math.random() * 0.02;
+  pAngle[i] = Math.random() * Math.PI * 2;
+  pSpin[i] = (Math.random() - 0.5) * 2.4;
+  pSeed[i] = Math.random() * 100;
+  pStrand[i] = Math.floor(Math.random() * 3);
+}
+
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+const particleMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexShader: `
+    attribute float size;
+    varying vec3 vColor;
+    void main() {
+      vColor = color;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (140.0 / -mv.z);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vColor;
+    void main() {
+      vec2 uv = gl_PointCoord - 0.5;
+      float d = length(uv);
+      float a = smoothstep(0.5, 0.08, d);
+      gl_FragColor = vec4(vColor, a);
+    }
+  `,
+  vertexColors: true
+});
+const points = new THREE.Points(geo, particleMat);
+column.add(points);
+
+// ---- Poussière d'ambiance -----------------------------------------------
+const DN = 250;
+const dustPos = new Float32Array(DN * 3);
+for (let i = 0; i < DN; i++) {
+  dustPos[i*3] = (Math.random() - 0.5) * 46;
+  dustPos[i*3+1] = (Math.random() - 0.5) * 26;
+  dustPos[i*3+2] = (Math.random() - 0.5) * 20 - 4;
+}
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+  color: 0x4f6bff, size: 0.06, transparent: true, opacity: 0.4,
+  blending: THREE.AdditiveBlending, depthWrite: false
+}));
+scene.add(dust);
+
+// ---- Simulation ----------------------------------------------------------
+const tmpColor = new THREE.Color();
+const rawColorVar = new THREE.Color();
+
+function smoothstep(a, b, x) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+function updateParticles(dt, time) {
+  let pulseB = 0, pulseS = 0, pulseG = 0;
+
+  for (let i = 0; i < N; i++) {
+    const y = Y_BOTTOM + pT[i] * (Y_TOP - Y_BOTTOM);
+
+    // degrés de raffinage à chaque portail
+    const s1 = smoothstep(Y_BRONZE - 0.4, Y_BRONZE + 0.4, y);
+    const s2 = smoothstep(Y_SILVER - 0.4, Y_SILVER + 0.4, y);
+    const s3 = smoothstep(Y_GOLD - 0.4, Y_GOLD + 0.4, y);
+
+    // vitesse : plus la donnée est raffinée, plus le flux est fluide
+    const spd = pSpeed[i] * (1 + 0.35 * s1 + 0.45 * s2 + 0.6 * s3);
+    pT[i] += spd * dt;
+    if (pT[i] >= 1) {
+      pT[i] -= 1;
+      pAngle[i] = Math.random() * Math.PI * 2;
+    }
+
+    // détection de passage (pulse des anneaux)
+    const prevY = Y_BOTTOM + (pT[i] - spd * dt) * (Y_TOP - Y_BOTTOM);
+    if (prevY < Y_BRONZE && y >= Y_BRONZE) pulseB = 1;
+    if (prevY < Y_SILVER && y >= Y_SILVER) pulseS = 1;
+    if (prevY < Y_GOLD && y >= Y_GOLD) pulseG = 1;
+
+    // rayon : brut désordonné -> resserré -> hélice fine convergente
+    const wob = Math.sin(pSeed[i] * 3.1 + time * (1.5 - s2)) * (1 - s1) * 0.9
+              + Math.sin(pSeed[i] * 7.7 + time * 2.1) * (1 - s2) * 0.35;
+    let radius = 2.05 * (1 - s1) + 1.5 * s1 * (1 - s2) + 1.0 * s2 * (1 - s3);
+    // après le gold : hélice qui converge vers l'apex
+    const apexT = smoothstep(Y_GOLD, Y_APEX, y);
+    radius += s3 * 0.72 * (1 - apexT);
+    radius += wob * (1 - s1 * 0.7);
+
+    // angle : chaotique en bas, régulier au milieu, hélice à 3 brins en haut
+    const freeAngle = pAngle[i] + time * (0.25 + pSpin[i] * (1 - s1) * 0.5)
+                    + s1 * time * 0.35 + s2 * time * 0.25;
+    const helixAngle = pStrand[i] * (Math.PI * 2 / 3) + y * 1.35 + time * 0.9;
+    const ang = freeAngle * (1 - s3) + helixAngle * s3;
+
+    const jitterY = Math.sin(pSeed[i] * 5.3 + time * 3.0) * (1 - s1) * 0.45;
+
+    positions[i*3]   = Math.cos(ang) * radius;
+    positions[i*3+1] = y + jitterY;
+    positions[i*3+2] = Math.sin(ang) * radius;
+
+    // couleur : brun terne -> bronze -> argent -> or/cyan
+    rawColorVar.copy(COL_RAW).multiplyScalar(0.65 + 0.35 * Math.sin(pSeed[i]));
+    tmpColor.copy(rawColorVar).lerp(COL_BRONZE_CLEAN, s1);
+    tmpColor.lerp(COL_SILVER, s2);
+    const goldMix = (i % 4 === 0) ? COL_CYAN : COL_GOLD;
+    tmpColor.lerp(goldMix, s3);
+    // éclat proche de l'apex
+    if (apexT > 0) tmpColor.lerp(new THREE.Color(1, 1, 1), apexT * 0.35);
+
+    colors[i*3]   = tmpColor.r;
+    colors[i*3+1] = tmpColor.g;
+    colors[i*3+2] = tmpColor.b;
+
+    // taille : grosse et brute -> fine et précieuse
+    sizes[i] = 3.6 * (1 - s1) + 2.2 * s1 * (1 - s2) + 1.9 * s2 * (1 - s3) + 1.5 * s3;
+  }
+
+  geo.attributes.position.needsUpdate = true;
+  geo.attributes.color.needsUpdate = true;
+  geo.attributes.size.needsUpdate = true;
+
+  return { pulseB, pulseS, pulseG };
+}
+
+// ---- Pulse des anneaux ----------------------------------------------------
+const ringPulse = { b: 0, s: 0, g: 0 };
+function updateRings(dt, time, pulses) {
+  ringPulse.b = Math.max(ringPulse.b - dt * 1.8, 0) + pulses.pulseB * 0.12;
+  ringPulse.s = Math.max(ringPulse.s - dt * 1.8, 0) + pulses.pulseS * 0.12;
+  ringPulse.g = Math.max(ringPulse.g - dt * 1.8, 0) + pulses.pulseG * 0.12;
+  ringPulse.b = Math.min(ringPulse.b, 1);
+  ringPulse.s = Math.min(ringPulse.s, 1);
+  ringPulse.g = Math.min(ringPulse.g, 1);
+
+  [[ringBronze, ringPulse.b], [ringSilver, ringPulse.s], [ringGold, ringPulse.g]].forEach(([r, p]) => {
+    const breathe = 1 + 0.03 * Math.sin(time * 1.6 + r.phase) + p * 0.09;
+    r.group.scale.set(breathe, 1, breathe);
+    r.glow.material.opacity = 0.4 + 0.2 * Math.sin(time * 1.6 + r.phase) * 0.5 + p * 0.5;
+    r.disc.material.opacity = 0.05 + p * 0.1;
+  });
+
+  const ap = 1 + 0.12 * Math.sin(time * 2.4);
+  apexGlow.scale.set(5 * ap, 5 * ap, 1);
+  apexGlow2.scale.set(2.4 / ap, 2.4 / ap, 1);
+}
+
+// ---- Labels HTML projetés -------------------------------------------------
+const labels = [
+  { el: document.getElementById('label-bronze'), y: Y_BRONZE, r: 2.6 },
+  { el: document.getElementById('label-silver'), y: Y_SILVER, r: 1.9 },
+  { el: document.getElementById('label-gold'),   y: Y_GOLD,   r: 1.3 },
+];
+const v = new THREE.Vector3();
+function updateLabels() {
+  for (const l of labels) {
+    v.set(column.position.x - l.r - 1.1, l.y, 0);
+    v.project(camera);
+    const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+    l.el.style.left = x + 'px';
+    l.el.style.top = y + 'px';
+    l.el.classList.add('visible');
+  }
+}
+
+// ---- Parallaxe souris -----------------------------------------------------
+const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+window.addEventListener('mousemove', (e) => {
+  mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+  mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+// ---- Resize ---------------------------------------------------------------
+function onResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  column.position.x = columnX();
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// ---- Boucle ---------------------------------------------------------------
+const clock = new THREE.Clock();
+let elapsed = 0;
+
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  elapsed += dt;
+
+  const pulses = updateParticles(dt, elapsed);
+  updateRings(dt, elapsed, pulses);
+
+  column.rotation.y = elapsed * 0.12;
+
+  mouse.x += (mouse.tx - mouse.x) * 0.04;
+  mouse.y += (mouse.ty - mouse.y) * 0.04;
+  camera.position.x = mouse.x * 1.4;
+  camera.position.y = 3.4 - mouse.y * 1.2;
+  camera.lookAt(0, LOOK_Y, 0);
+
+  updateLabels();
+  renderer.render(scene, camera);
+}
+
+if (reduced) {
+  // une frame statique : simulation avancée pour un rendu représentatif
+  updateParticles(0.016, 4);
+  updateRings(0.016, 4, { pulseB: 0, pulseS: 0, pulseG: 0 });
+  camera.lookAt(0, LOOK_Y, 0);
+  updateLabels();
+  renderer.render(scene, camera);
+} else {
+  renderer.setAnimationLoop(frame);
+}
+</script>
+</body>
+</html>

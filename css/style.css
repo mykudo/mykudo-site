@@ -83,10 +83,40 @@ img { max-width: 100%; }
 
 /* ============ HERO ============ */
 .hero {
-    background: radial-gradient(1100px 620px at 78% -12%, var(--navy-soft) 0%, var(--navy) 36%, transparent 76%);
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: radial-gradient(ellipse 90% 80% at 70% 45%, var(--navy) 0%, var(--navy-deep) 68%);
     padding-top: 76px;
 }
-.hero-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 40px; align-items: center; }
+#hero3d {
+    position: absolute; inset: 0; z-index: 0;
+    width: 100%; height: 100%; display: block;
+}
+.stage-labels { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.stage-label {
+    position: absolute;
+    transform: translate(-100%, -50%);
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    opacity: 0; transition: opacity .6s ease;
+}
+.stage-label.visible { opacity: 1; }
+.stage-label::after {
+    content: ''; width: 42px; height: 1px;
+    background: linear-gradient(90deg, currentColor, transparent);
+    opacity: 0.7;
+}
+.stage-label.bronze { color: #b48240; }
+.stage-label.silver { color: #bec6d7; }
+.stage-label.gold   { color: #ffd666; }
+.hero-grid { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr; align-items: center; width: 100%; }
+.hero-copy { max-width: 640px; }
 .hero-badge {
     display: inline-flex; align-items: center; gap: 10px;
     border: 1px solid rgba(56,225,255,.35); border-radius: 999px;
@@ -98,12 +128,10 @@ img { max-width: 100%; }
 .grad { background: linear-gradient(120deg, #7d93ff, var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero-sub { font-size: 17.5px; color: var(--text-soft); max-width: 560px; margin: 0 0 38px; }
 .hero-cta { display: flex; gap: 16px; flex-wrap: wrap; }
-.hero-visual { position: relative; min-height: 440px; }
-#hero3d { width: 100%; height: 420px; display: block; cursor: crosshair; }
-.hero-chips { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.hero-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 34px; }
 .chip { border: 1px solid rgba(125,147,255,.3); border-radius: 999px; padding: 6px 15px; font-size: 12.5px; color: var(--text-soft); white-space: nowrap; }
 
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding-top: 72px; padding-bottom: 84px; }
+.stats { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding-top: 72px; padding-bottom: 84px; }
 .stat { border-left: 2px solid rgba(79,107,255,.5); padding-left: 22px; }
 .stat-num { font-size: 42px; font-weight: 700; background: linear-gradient(120deg, var(--text), #7d93ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .stat-label { font-size: 14px; color: var(--text-soft); margin-top: 4px; }
@@ -196,9 +224,8 @@ img { max-width: 100%; }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 980px) {
-    .hero-grid { grid-template-columns: 1fr; }
-    .hero-visual { min-height: 360px; }
-    #hero3d { height: 340px; }
+    #hero3d { opacity: .55; }
+    .stage-labels { display: none; }
     .svc-grid { grid-template-columns: 1fr; }
     .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 40px; }
     .stats { grid-template-columns: 1fr; gap: 28px; }
@@ -226,7 +253,13 @@ img { max-width: 100%; }
 }
 
 /* ============ ÉTUDES DE CAS ============ */
-.cases { border-top: 1px solid var(--line); }
+.cases { border-top: 1px solid var(--line); overflow: hidden; }
+#mesh3d {
+    position: absolute; inset: 0; z-index: 0;
+    width: 100%; height: 100%; display: block;
+    opacity: .75; pointer-events: none;
+}
+.cases .container { position: relative; z-index: 1; }
 .cases-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
 .case {
     display: flex; flex-direction: column;

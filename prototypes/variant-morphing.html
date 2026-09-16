@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MYKUDO — Du chaos à l'ordre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05081c;
+    --bg-glow: #0a1358;
+    --indigo: #4f6bff;
+    --cyan: #38e1ff;
+    --gold: #ffd666;
+    --text: #eaf0ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    overflow-x: hidden;
+  }
+  .hero {
+    position: relative;
+    height: 100vh;
+    min-height: 560px;
+    background:
+      radial-gradient(ellipse 90% 70% at 78% 12%, var(--bg-glow) 0%, rgba(10, 19, 88, 0) 62%),
+      var(--bg);
+    overflow: hidden;
+  }
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .overlay {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 40px clamp(24px, 6vw, 88px);
+    pointer-events: none;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.32em;
+    color: var(--text);
+  }
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 640px;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: clamp(34px, 4.6vw, 62px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+  h1 .grad {
+    display: block;
+    background: linear-gradient(90deg, var(--indigo) 0%, var(--cyan) 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .lead {
+    margin-top: 22px;
+    font-size: clamp(15px, 1.4vw, 18px);
+    line-height: 1.6;
+    color: rgba(234, 240, 255, 0.72);
+    max-width: 480px;
+  }
+  .cta {
+    pointer-events: auto;
+    margin-top: 36px;
+    align-self: flex-start;
+    display: inline-block;
+    padding: 15px 32px;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 16px;
+    color: #05081c;
+    background: linear-gradient(90deg, var(--cyan), #7fa4ff);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 0 34px rgba(56, 225, 255, 0.28);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 44px rgba(56, 225, 255, 0.42);
+  }
+  @media (max-width: 720px) {
+    .content { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="scene"></canvas>
+  <div class="overlay">
+    <div class="brand">MYKUDO</div>
+    <div class="content">
+      <h1>
+        Vos plateformes IA, Data &amp; Cloud.
+        <span class="grad">Conçues pour la production.</span>
+      </h1>
+      <p class="lead">
+        Cabinet d'ingénierie : nous transformons vos données brutes en
+        plateformes fiables, gouvernées et prêtes à l'échelle.
+      </p>
+      <button class="cta" type="button">Discutons de votre projet</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const canvas = document.getElementById('scene');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+camera.position.set(0, 0, 11);
+
+// ------------------------------------------------------------------
+// Particules : deux buffers de positions cibles (chaos / ordre),
+// mixés dans le vertex shader via un uniform de progression
+// et un attribut de délai par particule (stagger organique).
+// ------------------------------------------------------------------
+const COUNT = 24000;
+
+const posChaos = new Float32Array(COUNT * 3);
+const posOrder = new Float32Array(COUNT * 3);
+const colChaos = new Float32Array(COUNT * 3);
+const colOrder = new Float32Array(COUNT * 3);
+const aDelay   = new Float32Array(COUNT);
+const aSize    = new Float32Array(COUNT);
+const aSeed    = new Float32Array(COUNT);
+const aBokeh   = new Float32Array(COUNT);
+
+const cIndigoDark = new THREE.Color('#2a3a9e');
+const cIndigo     = new THREE.Color('#4f6bff');
+const cCyan       = new THREE.Color('#38e1ff');
+const cGold       = new THREE.Color('#ffd666');
+const cBronze     = new THREE.Color('#c98a52');
+const cSilver     = new THREE.Color('#c9d6ee');
+
+// État ORDONNÉ : trois strates horizontales empilées (architecture médaillon).
+// Teintes par strate : bronze (bas), argent (milieu), or-cyan (haut),
+// avec arêtes lumineuses sur le pourtour de chaque strate.
+const LAYERS = 3;
+const perLayer = Math.floor(COUNT / LAYERS);
+const layerW = 5.4, layerD = 3.2, layerGap = 1.55, layerThick = 0.07;
+
+let i3 = 0;
+for (let i = 0; i < COUNT; i++, i3 += 3) {
+  // --- Chaos : nuage organique dispersé (gaussien anisotrope + bras) ---
+  const r = Math.pow(Math.random(), 0.6) * 4.2;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  posChaos[i3]     = r * Math.sin(phi) * Math.cos(theta) * 1.25 + (Math.random() - 0.5) * 1.4;
+  posChaos[i3 + 1] = r * Math.cos(phi) * 0.85 + Math.sin(theta * 3.0) * 0.5;
+  posChaos[i3 + 2] = r * Math.sin(phi) * Math.sin(theta) * 0.9 + (Math.random() - 0.5) * 1.2;
+
+  // --- Ordre : grille dans une des trois strates ---
+  const layer = Math.min(LAYERS - 1, Math.floor(i / perLayer));
+  const cols = 110;
+  const rows = Math.ceil(perLayer / cols);
+  const idx = i - layer * perLayer;
+  const gx = idx % cols;
+  const gz = Math.floor(idx / cols);
+  const fx = gx / (cols - 1);
+  const fz = gz / Math.max(rows - 1, 1);
+  posOrder[i3]     = (fx - 0.5) * layerW;
+  posOrder[i3 + 1] = (layer - (LAYERS - 1) / 2) * layerGap + (Math.random() - 0.5) * layerThick;
+  posOrder[i3 + 2] = (fz - 0.5) * layerD;
+
+  // Arête : particules proches du bord de la dalle
+  const edgeDist = Math.min(fx, 1 - fx, fz, 1 - fz);
+  const isEdge = edgeDist < 0.022;
+
+  // --- Couleur chaos : indigo sombre → indigo, pointes de cyan ---
+  const dark = cIndigoDark.clone().lerp(cIndigo, Math.random() * 0.75);
+  const accent = Math.random();
+  if (accent < 0.10) dark.lerp(cCyan, 0.45 + Math.random() * 0.35);
+  else if (accent < 0.13) dark.lerp(cGold, 0.4);
+  colChaos[i3] = dark.r; colChaos[i3 + 1] = dark.g; colChaos[i3 + 2] = dark.b;
+
+  // --- Couleur ordre : teinte métallique par strate + arêtes brillantes ---
+  let target;
+  if (layer === 0) {
+    target = cBronze.clone().lerp(cIndigo, 0.10 + Math.random() * 0.30);
+    if (isEdge) target = cBronze.clone().lerp(cGold, 0.55);
+  } else if (layer === 1) {
+    target = cSilver.clone().lerp(cIndigo, 0.12 + Math.random() * 0.30);
+    if (isEdge) target = cSilver.clone().lerp(cCyan, 0.40);
+  } else {
+    target = cGold.clone().lerp(cCyan, 0.30 + Math.random() * 0.50);
+    if (isEdge) target = cGold.clone().lerp(cCyan, 0.12);
+  }
+  target.multiplyScalar(1.22);
+  colOrder[i3] = target.r; colOrder[i3 + 1] = target.g; colOrder[i3 + 2] = target.b;
+
+  aDelay[i] = Math.random();
+  // quelques grosses particules « bokeh » pour la profondeur en phase chaos
+  const bokeh = Math.random() < 0.025 ? 2.2 + Math.random() * 1.6 : 0;
+  aBokeh[i] = bokeh;
+  aSize[i] = (isEdge ? 1.7 : 0.65) + Math.random() * (isEdge ? 0.9 : 0.95) + bokeh;
+  aSeed[i] = Math.random() * Math.PI * 2;
+}
+
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute('position',  new THREE.BufferAttribute(posChaos, 3));
+geometry.setAttribute('aPosOrder', new THREE.BufferAttribute(posOrder, 3));
+geometry.setAttribute('aColChaos', new THREE.BufferAttribute(colChaos, 3));
+geometry.setAttribute('aColOrder', new THREE.BufferAttribute(colOrder, 3));
+geometry.setAttribute('aDelay',    new THREE.BufferAttribute(aDelay, 1));
+geometry.setAttribute('aSize',     new THREE.BufferAttribute(aSize, 1));
+geometry.setAttribute('aSeed',     new THREE.BufferAttribute(aSeed, 1));
+geometry.setAttribute('aBokeh',    new THREE.BufferAttribute(aBokeh, 1));
+
+const uniforms = {
+  uProgress: { value: 0 },   // 0 = chaos, 1 = ordre (stagger inclus)
+  uTime:     { value: 0 },
+  uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+};
+
+const material = new THREE.ShaderMaterial({
+  uniforms,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexShader: /* glsl */`
+    attribute vec3 aPosOrder;
+    attribute vec3 aColChaos;
+    attribute vec3 aColOrder;
+    attribute float aDelay;
+    attribute float aSize;
+    attribute float aSeed;
+    attribute float aBokeh;
+    uniform float uProgress;
+    uniform float uTime;
+    uniform float uPixelRatio;
+    varying vec3 vColor;
+    varying float vAlpha;
+
+    // Easing cubic in-out par particule
+    float ease(float t) {
+      return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0;
+    }
+
+    // Pseudo curl-noise léger : champ de courants organiques divergence-faible
+    vec3 curl(vec3 q, float t) {
+      float x = sin(q.y * 1.3 + t * 0.5) + cos(q.z * 1.7 - t * 0.4);
+      float y = sin(q.z * 1.1 - t * 0.45) + cos(q.x * 1.5 + t * 0.35);
+      float z = sin(q.x * 1.6 + t * 0.4) + cos(q.y * 1.2 - t * 0.5);
+      return vec3(x, y, z);
+    }
+
+    void main() {
+      // Stagger : chaque particule commence son morphing avec un décalage
+      float span = 0.62;                       // durée locale du morphing
+      float start = aDelay * (1.0 - span);     // fenêtre de départ étalée
+      float local = clamp((uProgress - start) / span, 0.0, 1.0);
+      float p = ease(local);
+
+      vec3 pos = mix(position, aPosOrder, p);
+
+      // Tourbillon : en cours de route, les particules s'enroulent autour de l'axe Y
+      float swirl = sin(local * 3.14159265) ;   // nul aux extrémités, max à mi-chemin
+      float ang = swirl * (1.6 + aDelay * 1.4);
+      float ca = cos(ang), sa = sin(ang);
+      pos.xz = mat2(ca, -sa, sa, ca) * pos.xz;
+      // aspiration légère vers l'axe au cœur du tourbillon (effet spirale)
+      pos.xz *= 1.0 - swirl * 0.22;
+      pos.y += swirl * sin(aSeed * 4.0) * 0.5;
+
+      // Courants organiques (curl) en phase chaos, quasi nuls dans l'ordre
+      float drift = 1.0 - p * 0.985;
+      pos += curl(position * 0.55 + aSeed * 0.13, uTime) * 0.24 * drift;
+
+      vColor = mix(aColChaos, aColOrder, p);
+
+      // Shimmer discret dans l'état ordonné (la surface « respire »)
+      vColor *= 1.0 + 0.09 * sin(uTime * 2.2 + aSeed * 23.0) * p;
+
+      // Étincelle : flash bref quand la particule vient de se mettre en place
+      float spark = smoothstep(0.78, 0.92, local) * (1.0 - smoothstep(0.92, 1.0, local));
+      vColor += vec3(0.9, 0.95, 1.0) * spark * 0.9;
+
+      vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+
+      // Profondeur : particules lointaines plus petites et plus discrètes
+      float depth = clamp((-mv.z - 6.0) / 10.0, 0.0, 1.0);
+      // Ordre = points fins et moins opaques (la densité fait la lumière),
+      // chaos = points plus larges et diffus ; le fondu de profondeur
+      // s'atténue dans l'ordre pour garder les dalles lumineuses.
+      float fade = 1.0 - depth * mix(0.55, 0.35, p);
+      vAlpha = (0.68 - p * 0.13) * fade + spark * 0.35;
+
+      gl_Position = projectionMatrix * mv;
+      // Seules les grosses particules bokeh se resserrent dans l'ordre
+      // (sinon elles saturent les dalles en blanc) ; les arêtes gardent leur taille.
+      float size = aSize - aBokeh * p * 0.9;
+      gl_PointSize = size * (40.0 * uPixelRatio) / max(-mv.z, 0.1)
+                   * (0.85 - 0.29 * p) * (1.0 + spark * 0.9);
+    }
+  `,
+  fragmentShader: /* glsl */`
+    varying vec3 vColor;
+    varying float vAlpha;
+    void main() {
+      // Point rond doux
+      vec2 uv = gl_PointCoord - 0.5;
+      float d = length(uv);
+      float a = smoothstep(0.5, 0.12, d) * vAlpha;
+      if (a < 0.01) discard;
+      gl_FragColor = vec4(vColor, a);
+    }
+  `,
+});
+
+const points = new THREE.Points(geometry, material);
+const group = new THREE.Group();
+group.add(points);
+group.rotation.x = 0.36;
+scene.add(group);
+
+// ------------------------------------------------------------------
+// Layout : nuage décalé à droite de l'écran
+// ------------------------------------------------------------------
+function layout() {
+  const w = canvas.clientWidth || window.innerWidth;
+  const h = canvas.clientHeight || window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  // À droite sur desktop, recentré sur mobile
+  group.position.x = w > 720 ? 3.1 : 0.6;
+  group.position.y = w > 720 ? 0.1 : 1.4;
+  const s = w > 720 ? 1.0 : 0.72;
+  group.scale.setScalar(s);
+}
+layout();
+window.addEventListener('resize', layout);
+
+// ------------------------------------------------------------------
+// Cycle (~14s, asymétrique) : le récit commence par le chaos tenu,
+// mise en ordre spectaculaire, ordre tenu longuement, retour doux.
+// ------------------------------------------------------------------
+const H_CHAOS = 4.0, M1 = 2.5, H_ORDER = 5.5, M2 = 2.0;
+const CYCLE = H_CHAOS + M1 + H_ORDER + M2;
+
+function progressAt(t) {
+  const c = t % CYCLE;
+  if (c < H_CHAOS) return 0.0;                                    // tenu chaos
+  if (c < H_CHAOS + M1) return (c - H_CHAOS) / M1;                // chaos → ordre
+  if (c < H_CHAOS + M1 + H_ORDER) return 1.0;                     // tenu ordre
+  return 1.0 - (c - H_CHAOS - M1 - H_ORDER) / M2;                 // ordre → chaos
+}
+
+// ------------------------------------------------------------------
+// Parallaxe souris (lerp) + rotation lente d'ensemble
+// ------------------------------------------------------------------
+const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+window.addEventListener('mousemove', (e) => {
+  mouse.tx = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+function render() {
+  // Temps depuis la navigation (déterministe, indépendant du chargement du module)
+  const t = performance.now() / 1000;
+  uniforms.uTime.value = t;
+  uniforms.uProgress.value = progressAt(t);
+
+  mouse.x += (mouse.tx - mouse.x) * 0.045;
+  mouse.y += (mouse.ty - mouse.y) * 0.045;
+
+  group.rotation.y = t * 0.07 + mouse.x * 0.22;
+  group.rotation.x = 0.36 + mouse.y * 0.14;
+
+  renderer.render(scene, camera);
+}
+
+if (reducedMotion) {
+  // Une seule frame statique : état ordonné, pas de boucle d'animation
+  uniforms.uProgress.value = 1.0;
+  uniforms.uTime.value = 0.0;
+  group.rotation.y = 0.5;
+  renderer.render(scene, camera);
+  window.addEventListener('resize', () => { layout(); renderer.render(scene, camera); });
+} else {
+  renderer.setAnimationLoop(render);
+}
+</script>
+</body>
+</html>
