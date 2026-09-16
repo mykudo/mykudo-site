@@ -14,6 +14,39 @@
         links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
     }
 
+    /* ---------- Lightbox des études de cas ---------- */
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+    if (lightbox && lightboxImg) {
+        const open = (href, alt) => {
+            lightboxImg.src = href;
+            lightboxImg.alt = alt || '';
+            lightbox.hidden = false;
+            document.body.style.overflow = 'hidden';
+        };
+        const close = () => {
+            lightbox.hidden = true;
+            lightboxImg.src = '';
+            document.body.style.overflow = '';
+        };
+        document.querySelectorAll('a.case').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const img = a.querySelector('img');
+                open(a.getAttribute('href'), img ? img.alt : '');
+            });
+        });
+        lightbox.addEventListener('click', e => {
+            /* clic sur le fond ou la croix : fermer ; clic sur l'image : ignorer */
+            if (e.target !== lightboxImg) close();
+        });
+        if (lightboxClose) lightboxClose.addEventListener('click', close);
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && !lightbox.hidden) close();
+        });
+    }
+
     /* ---------- Formulaire (Formspree + reCAPTCHA v3) ---------- */
     const form = document.getElementById('contact-form');
     const status = document.getElementById('form-status');
