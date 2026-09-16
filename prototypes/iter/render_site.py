@@ -43,6 +43,7 @@ try:
         shot(1920, 1000, "hero", [7000, 4000])
         shot(2560, 1200, "wide", [7000])
         shot(1920, 1000, "cases", [7000], scroll_to="#cas")
+        shot(2560, 1200, "cases-wide", [7000, 4000], scroll_to="#cas")
         shot(390, 844, "mobile", [7000])
         browser.close()
 finally:

@@ -95,6 +95,7 @@ img { max-width: 100%; }
 #hero3d {
     position: absolute; inset: 0; z-index: 0;
     width: 100%; height: 100%; display: block;
+    pointer-events: none;
     /* La scène s'éteint avant la rangée de stats et sous la nav :
        aucune collision 3D/texte quelle que soit la largeur d'écran. */
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 9%, #000 66%, transparent 82%);
@@ -250,6 +251,9 @@ img { max-width: 100%; }
     .btn-nav { display: none; }
     .logos-row { justify-content: center; }
     .section { padding: 72px 0; }
+    .cases { padding-bottom: 150px; }
+    /* Mobile : texte pleine largeur, le mesh passe en décor très discret. */
+    #mesh3d { opacity: .4; }
 }
 @media (max-width: 560px) {
     .container { padding: 0 20px; }
@@ -263,11 +267,18 @@ img { max-width: 100%; }
 }
 
 /* ============ ÉTUDES DE CAS ============ */
-.cases { border-top: 1px solid var(--line); overflow: hidden; }
+.cases {
+    border-top: 1px solid var(--line); overflow: hidden;
+    /* Bande vide en bas : le hub du data mesh y vit et s'y éteint en fondu. */
+    padding-bottom: 150px;
+}
 #mesh3d {
     position: absolute; inset: 0; z-index: 0;
     width: 100%; height: 100%; display: block;
     opacity: .75; pointer-events: none;
+    /* La scène naît et meurt en douceur : jamais de coupe nette aux bords. */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 82%, transparent 100%);
 }
 .cases .container { position: relative; z-index: 1; }
 .cases-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }

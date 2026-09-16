@@ -282,11 +282,20 @@ function observeLoop(el, renderer, frame) {
         mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
     });
 
+    function renderStill() {
+        camera.updateMatrixWorld(); /* sinon v.project() diverge avant le 1er rendu */
+        updateLabels();
+        renderer.render(scene, camera);
+    }
     function onResize() {
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(W(), H());
         camera.aspect = W() / Math.max(1, H());
         camera.updateProjectionMatrix();
         column.position.x = columnX();
+        /* setSize() efface le buffer : en reduced-motion la boucle est
+           inactive, il faut re-rendre une frame statique. */
+        if (reduced) renderStill();
     }
     window.addEventListener('resize', onResize);
     onResize();
@@ -312,8 +321,7 @@ function observeLoop(el, renderer, frame) {
         updateParticles(0.016, 4);
         updateRings(0.016, 4, { pulseB: 0, pulseS: 0, pulseG: 0 });
         camera.lookAt(0, LOOK_Y, 0);
-        updateLabels();
-        renderer.render(scene, camera);
+        renderStill();
     } else {
         observeLoop(host, renderer, frame);
     }
@@ -347,10 +355,46 @@ function observeLoop(el, renderer, frame) {
     };
 
     const system = new THREE.Group();
-    /* Hub posé dans la zone libre sous la rangée d'impacts :
-       le noyau vit dans le vide, les orbites balaient l'arrière des cartes. */
-    system.position.set(3.0, -6.6, 0);
     scene.add(system);
+    /* Hub ancré en coordonnées ÉCRAN (bas-droite), pas en coordonnées monde :
+       quelle que soit la largeur/hauteur de la section, le noyau reste dans la
+       zone vide sous la rangée d'impacts, loin des chiffres et des cartes. */
+    const anchorRay = new THREE.Vector3();
+    /* Place un objet sur le plan z donné, au point d'ancrage écran (NDC). */
+    function anchorTo(obj, nx, ny, z) {
+        anchorRay.set(nx, ny, 0.5).unproject(camera)
+            .sub(camera.position).normalize();
+        const t = (z - camera.position.z) / anchorRay.z;
+        obj.position.copy(camera.position).addScaledVector(anchorRay, t);
+    }
+    function placeSystem() {
+        camera.updateMatrixWorld(); /* indispensable avant le 1er rendu */
+        const aspect = W() / Math.max(1, H());
+        /* La caméra couvre toute la hauteur de la section : sans compensation,
+           la scène gonfle avec la hauteur (section mobile très haute). On
+           maintient une taille ÉCRAN à peu près constante. */
+        let s = Math.min(0.85, Math.max(0.26, 0.85 * 1100 / H()));
+        if (aspect < 1.1) {
+            /* Mobile : hub sous le bord bas, seules les orbites hautes émergent
+               dans le fondu ; rien ne remonte jusqu'aux labels d'impact. */
+            s *= 0.55;
+            system.scale.setScalar(s);
+            anchorTo(system, 0.42, -1.02, 0);
+        } else {
+            /* Desktop : centre de la marge droite du container (zone vide),
+               sous la rangée d'impacts. */
+            system.scale.setScalar(s);
+            const edge = Math.min(1200, W()) / W(); /* bord droit du container en NDC */
+            anchorTo(system, Math.min(0.9, (edge + 1) / 2 + 0.04), -0.5, 0);
+        }
+        /* Satellite : n'existe que si la marge gauche est assez large. */
+        satellite.visible = aspect >= 1.4 && W() > 1360;
+        if (satellite.visible) {
+            satellite.scale.setScalar(s * 0.8);
+            const edge = Math.min(1200, W()) / W();
+            anchorTo(satellite, Math.max(-0.92, -(edge + 1) / 2 - 0.04), 0.1, -3);
+        }
+    }
 
     /* Hub central */
     const core = new THREE.Group();
@@ -373,9 +417,10 @@ function observeLoop(el, renderer, frame) {
         new THREE.IcosahedronGeometry(0.8, 1),
         new THREE.MeshBasicMaterial({ color: COLORS.cyan, wireframe: true, transparent: true, opacity: 0.8 })
     ), coreInner, coreShell, coreOuter);
-    const coreGlowA = makeGlowSprite(COLORS.cyan, 2.4, 0.45);
-    const coreGlowB = makeGlowSprite(COLORS.cyan, 4.4, 0.2);
-    core.add(coreGlowA, coreGlowB, makeGlowSprite(COLORS.indigo, 8.0, 0.15));
+    /* Halos contenus : le hub doit rester un décor, jamais éclairer un texte. */
+    const coreGlowA = makeGlowSprite(COLORS.cyan, 2.0, 0.38);
+    const coreGlowB = makeGlowSprite(COLORS.cyan, 3.4, 0.14);
+    core.add(coreGlowA, coreGlowB, makeGlowSprite(COLORS.indigo, 5.2, 0.1));
     const coreRings = [];
     [
         { r: 1.15, tiltX: 0.45, tiltZ: 0.0, color: COLORS.cyan, opacity: 0.45 },
@@ -503,6 +548,35 @@ function observeLoop(el, renderer, frame) {
         return { d, line };
     });
 
+    /* Satellite : petit écho du hub dans la marge gauche (desktop large).
+       Un nœud wireframe, deux anneaux fins, un halo très discret. */
+    const satellite = new THREE.Group();
+    const satFloat = new THREE.Group();
+    satellite.add(satFloat);
+    const satCore = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.5, 1),
+        new THREE.MeshBasicMaterial({ color: COLORS.indigo, wireframe: true, transparent: true, opacity: 0.55 })
+    );
+    satFloat.add(satCore, makeGlowSprite(COLORS.indigo, 2.6, 0.16), makeGlowSprite(COLORS.cyan, 1.1, 0.18));
+    const satRings = [];
+    [{ r: 0.95, tx: 0.5, tz: 0.3, c: COLORS.cyan, o: 0.3 }, { r: 1.35, tx: -0.7, tz: -0.4, c: COLORS.gold, o: 0.2 }]
+        .forEach((d, i) => {
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(d.r, 0.008, 8, 96),
+                new THREE.MeshBasicMaterial({
+                    color: d.c, transparent: true, opacity: d.o,
+                    blending: THREE.AdditiveBlending, depthWrite: false,
+                })
+            );
+            ring.rotation.set(Math.PI / 2 + d.tx, 0, d.tz);
+            satFloat.add(ring);
+            satRings.push({ ring, speed: 0.3 + i * 0.2, baseTiltX: Math.PI / 2 + d.tx });
+        });
+    /* Petit paquet lumineux sur l'anneau cyan : même langage que le mesh. */
+    const satPacket = makeGlowSprite(COLORS.cyan, 0.22, 0.8);
+    satFloat.add(satPacket);
+    scene.add(satellite);
+
     /* Poussière + étoiles */
     let dust, bigStars;
     {
@@ -581,11 +655,11 @@ function observeLoop(el, renderer, frame) {
         return out;
     }
 
-    function update(time) {
+    function update(time, dt) {
         const hbT = (time % HEARTBEAT_PERIOD) / HEARTBEAT_PERIOD;
-        const waveRadius = 1.5 + hbT * 6.6;
+        const waveRadius = 1.2 + hbT * 4.6;
         wave.scale.setScalar(waveRadius);
-        waveMat.opacity = 0.1 * Math.min(1, hbT * 8) * Math.pow(1 - hbT, 1.8);
+        waveMat.opacity = 0.07 * Math.min(1, hbT * 8) * Math.pow(1 - hbT, 1.8);
         const corePulse = Math.exp(-hbT * 7);
 
         domains.forEach((d) => {
@@ -633,7 +707,7 @@ function observeLoop(el, renderer, frame) {
         });
 
         packets.forEach((p) => {
-            p.t = (p.t + p.speed * 0.016) % 1;
+            p.t = (p.t + p.speed * dt) % 1;
             linkEndpoints(p.link);
             bezierPoint(p.t, p.head.position);
             const fade = Math.min(1, Math.min(p.t, 1 - p.t) * 6);
@@ -647,6 +721,21 @@ function observeLoop(el, renderer, frame) {
                 target.glow.material.opacity = Math.min(0.8, target.glow.material.opacity + (p.t - 0.9) * 3.5);
             }
         });
+
+        if (satellite.visible) {
+            satFloat.position.y = Math.sin(time * 0.5) * 0.25;
+            satCore.rotation.y = time * 0.3;
+            satCore.rotation.x = time * 0.14;
+            satRings.forEach((r, i) => {
+                r.ring.rotation.z = time * r.speed * (i % 2 ? -1 : 1);
+                r.ring.rotation.x = r.baseTiltX + Math.sin(time * 0.25 + i * 1.7) * 0.15;
+            });
+            /* Le paquet suit l'anneau cyan (rayon 0.95, mêmes tilts). */
+            const pa = time * 0.7;
+            tmpPoint.set(Math.cos(pa) * 0.95, Math.sin(pa) * 0.95, 0)
+                .applyEuler(satRings[0].ring.rotation);
+            satPacket.position.copy(tmpPoint);
+        }
 
         dust.rotation.y = -time * 0.03;
         bigStars.material.opacity = 0.45 + 0.15 * Math.sin(time * 0.9);
@@ -669,25 +758,37 @@ function observeLoop(el, renderer, frame) {
         system.rotation.z = tiltZ;
     }
 
+    function renderStill() {
+        update(0, 0.016);
+        applyTilt();
+        renderer.render(scene, camera);
+    }
     function onResize() {
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         camera.aspect = W() / Math.max(1, H());
         camera.updateProjectionMatrix();
         renderer.setSize(W(), H());
+        placeSystem();
+        /* setSize() efface le buffer : en reduced-motion la boucle est
+           inactive, il faut re-rendre une frame statique. */
+        if (reduced) renderStill();
     }
     window.addEventListener('resize', onResize);
     onResize();
 
     const clock = new THREE.Clock();
+    let elapsed = 0;
     function frame() {
-        update(clock.getElapsedTime());
+        /* dt réel clampé : la vitesse des paquets ne dépend pas du refresh. */
+        const dt = Math.min(clock.getDelta(), 0.05);
+        elapsed += dt;
+        update(elapsed, dt);
         applyTilt();
         renderer.render(scene, camera);
     }
 
     if (reduced) {
-        update(0);
-        applyTilt();
-        renderer.render(scene, camera);
+        renderStill();
     } else {
         observeLoop(host, renderer, frame);
     }
